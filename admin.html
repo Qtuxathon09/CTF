@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --background: #0b0b0b;
+            --foreground: #ffffff;
+            --neon-red: #ff2b2b;
+            --neon-green: #22c55e;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-bg-dark: rgba(0, 0, 0, 0.3);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-red: rgba(255, 43, 43, 0.1);
+            --font-body: 'JetBrains Mono', monospace;
+            --font-heading: 'Orbitron', monospace;
+            --transition-smooth: all 0.3s ease;
+            --shadow-neon: 0 0 20px rgba(255, 43, 43, 0.5);
+            --radius: 0.5rem;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--background);
+            color: var(--foreground);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at 20% 30%, rgba(255, 43, 43, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(255, 43, 43, 0.05) 0%, transparent 50%);
+        }
+        
+        .admin-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--neon-red);
+            text-shadow: var(--shadow-neon);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .glass-card {
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+        }
+        
+        .neon-text { color: var(--neon-red); text-shadow: 0 0 5px rgba(255, 43, 43, 0.8); }
+        .neon-green-text { color: var(--neon-green); text-shadow: 0 0 5px rgba(34, 197, 94, 0.8); }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 2px solid transparent;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .tab-btn.active {
+            color: var(--neon-red);
+            border-bottom-color: var(--neon-red);
+            text-shadow: var(--shadow-neon);
+        }
+        .tab-btn:hover:not(.active) {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: var(--transition-smooth);
+        }
+        
+        .btn-delete { background-color: #ef4444; color: var(--background); }
+        .btn-delete:hover { background-color: #dc2626; }
+
+        .btn-disqualify { background-color: #fbbf24; color: var(--background); }
+        .btn-disqualify:hover { background-color: #f59e0b; }
+        
+        .list-header {
+            display: grid;
+            grid-template-columns: 0.5fr 2fr 1fr 2fr;
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .list-item {
+            display: grid;
+            grid-template-columns: 0.5fr 2fr 1fr 2fr;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center;
+        }
+        .list-item:hover {
+            background: rgba(255, 43, 43, 0.05);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.5rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto max-w-6xl">
+        <h1 class="admin-title"><i class="fas fa-user-shield"></i> HAvOC CTF ADMIN PANEL</h1>
+
+        <div id="authRequired" class="glass-card p-10 text-center" style="display: none;">
+            <p class="neon-text text-2xl font-bold mb-4">ACCESS DENIED</p>
+            <p>You must be signed in as an administrator to access this panel.</p>
+        </div>
+
+        <div id="adminContent" style="display: none;">
+            
+            <!-- Tabs Navigation -->
+            <div class="glass-card flex justify-start mb-6 p-2">
+                <button class="tab-btn active" data-tab="teams">Team Management</button>
+                <button class="tab-btn" data-tab="users">User Management</button>
+                <button class="tab-btn" data-tab="challenges">Challenges (Mock)</button>
+                <button class="tab-btn" data-tab="site">Site Settings (Mock)</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tabContent" class="glass-card p-6">
+                
+                <!-- 1. Team Management Tab -->
+                <div id="teams" class="tab-pane">
+                    <h2 class="text-xl font-bold mb-4 neon-text">Live Teams Leaderboard</h2>
+                    <div class="mb-4 text-sm">
+                        <span class="font-bold">Status:</span> Live Updates Enabled. Click on Score/Status to modify team details.
+                    </div>
+                    
+                    <div class="list-header">
+                        <div>Score</div>
+                        <div>Team Name</div>
+                        <div>Leader</div>
+                        <div>Actions</div>
+                    </div>
+                    <div id="teamList">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin neon-text"></i> Loading Teams...</div>
+                    </div>
+                </div>
+
+                <!-- 2. User Management Tab -->
+                <div id="users" class="tab-pane hidden">
+                    <h2 class="text-xl font-bold mb-4 neon-text">Registered Users</h2>
+                    <div class="list-header" style="grid-template-columns: 1fr 2fr 1fr;">
+                        <div>UID</div>
+                        <div>Email</div>
+                        <div>Actions</div>
+                    </div>
+                    <div id="userList">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin neon-text"></i> Loading Users...</div>
+                    </div>
+                    <p class="text-xs opacity-50 mt-4">Note: User deletion here only removes the profile; Firebase Auth deletion requires Admin SDK which is simulated.</p>
+                </div>
+
+                <!-- 3. Challenges Tab (Mock Interface) -->
+                <div id="challenges" class="tab-pane hidden">
+                     <h2 class="text-xl font-bold mb-4 neon-text">Challenge Management (Mock)</h2>
+                     <p class="mb-4 opacity-80">This section simulates adding or editing challenges. For a real system, challenge content and flags would be managed via a backend API or secure cloud functions.</p>
+
+                     <div class="bg-gray-800 p-4 rounded-lg">
+                         <p class="font-bold neon-text">New Challenge Creator</p>
+                         <input type="text" placeholder="Title" class="w-full mt-2 p-2 rounded bg-gray-700 border border-gray-600">
+                         <textarea placeholder="Description" class="w-full mt-2 p-2 rounded bg-gray-700 border border-gray-600"></textarea>
+                         <button class="action-btn mt-2 bg-blue-500 text-white">Save New Challenge (Simulated)</button>
+                     </div>
+                </div>
+                
+                <!-- 4. Site Settings Tab (Mock Interface) -->
+                <div id="site" class="tab-pane hidden">
+                    <h2 class="text-xl font-bold mb-4 neon-text">Global CTF Controls (Mock)</h2>
+                    <div class="space-y-4">
+                        <div class="glass-card p-4">
+                            <p class="font-bold neon-text">CTF State:</p>
+                            <button class="action-btn mt-2 bg-green-500 text-white">Start CTF (Simulated)</button>
+                            <button class="action-btn mt-2 bg-yellow-500 text-white">Pause Submissions (Simulated)</button>
+                        </div>
+                        <div class="glass-card p-4">
+                            <p class="font-bold neon-text">Disqualification</p>
+                            <input type="text" placeholder="Team ID to Disqualify" class="mt-2 p-2 rounded bg-gray-700 border border-gray-600">
+                            <button class="action-btn mt-2 bg-red-700 text-white">Disqualify (Simulated)</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            updateDoc, 
+            collection, 
+            query, 
+            where,
+            getDocs,
+            orderBy,
+            onSnapshot,
+            deleteDoc,
+            writeBatch
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- ADMIN CONFIGURATION ---
+        // !!! IMPORTANT: In a production app, use Firebase Security Rules and Auth Claims (roles)
+        // This is a simple client-side check for demonstration purposes only.
+        const ADMIN_EMAIL = "havocadmin@gmail.com"; // <--- PASTE YOUR ADMIN EMAIL HERE
+        
+        // --- FIREBASE CONFIGURATION (Synchronized) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
+            authDomain: "havoc-985d0.firebaseapp.com",
+            databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
+            projectId: "havoc-985d0",
+            storageBucket: "havoc-985d0.firebasestorage.app",
+            messagingSenderId: "8269389875",
+            appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
+            measurementId: "G-Y6FXWB2RWY"
+        };
+        const APP_ID = firebaseConfig.projectId; 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- GLOBAL STATE ---
+        let currentUserId = null;
+        
+        // --- DOM Elements ---
+        const authRequired = document.getElementById('authRequired');
+        const adminContent = document.getElementById('adminContent');
+        const teamList = document.getElementById('teamList');
+        const userList = document.getElementById('userList');
+        
+        // --- UTILITY FUNCTIONS ---
+        function showToast(type, message) {
+            console.log(`[TOAST ${type.toUpperCase()}]: ${message}`);
+            // Simplified toast for admin panel, relying primarily on console for feedback.
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+        }
+        
+        // Attach tab button listeners
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => switchTab(e.target.dataset.tab));
+        });
+
+        // --- REAL-TIME DATA LISTENERS ---
+
+        /** 1. Live Teams Scoreboard Listener */
+        function listenForTeams() {
+            const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
+            const q = query(teamsRef, orderBy("score", "desc"));
+            
+            onSnapshot(q, (snapshot) => {
+                const teams = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    teams.push({
+                        id: doc.id,
+                        ...data,
+                        solved: data.solvedChallenges ? Object.keys(data.solvedChallenges).length : 0,
+                    });
+                });
+                renderTeamList(teams);
+            }, (error) => {
+                console.error("Error fetching teams:", error);
+                teamList.innerHTML = `<div class="p-4 text-center neon-text">Error fetching team data.</div>`;
+            });
+        }
+
+        /** Renders the team list table */
+        function renderTeamList(teams) {
+            teamList.innerHTML = '';
+            
+            if (teams.length === 0) {
+                teamList.innerHTML = `<div class="p-4 text-center">No teams registered.</div>`;
+                return;
+            }
+
+            teams.forEach(team => {
+                const listItem = document.createElement('div');
+                listItem.className = 'list-item';
+                
+                const statusClass = team.disqualified ? 'text-red-500' : 'neon-green-text';
+
+                listItem.innerHTML = `
+                    <div class="font-bold">${team.score || 0}</div>
+                    <div>${team.name} <span class="${statusClass} text-xs">(${team.disqualified ? 'DISQUALIFIED' : 'ACTIVE'})</span></div>
+                    <div>${team.leaderName || team.leaderId}</div>
+                    <div class="flex gap-2">
+                        <button class="action-btn ${team.disqualified ? 'bg-green-600' : 'btn-disqualify'}" data-action="${team.disqualified ? 'reactivate' : 'disqualify'}" data-id="${team.id}">${team.disqualified ? 'REACTIVATE' : 'DISQUALIFY'}</button>
+                        <button class="action-btn btn-delete" data-action="delete-team" data-id="${team.id}">DELETE</button>
+                    </div>
+                `;
+                teamList.appendChild(listItem);
+            });
+        }
+
+        /** 2. Live User List Listener */
+        function listenForUsers() {
+             const userProfilesRef = collection(db, `/artifacts/${APP_ID}/users`);
+             
+             // NOTE: Since user profiles are organized by UID, we listen to the parent collection
+             // This is less efficient than a query but fetches all profile documents.
+             onSnapshot(userProfilesRef, async (snapshot) => {
+                 const users = [];
+                 const batchPromises = [];
+
+                 snapshot.forEach(doc => {
+                     // We fetch the 'profile' subcollection document for the username/email
+                     const profileRef = doc.ref.path + '/user_profiles/profile';
+                     batchPromises.push(getDoc(doc.ref.firestore, profileRef).then(profileSnap => {
+                         if (profileSnap.exists()) {
+                            users.push({
+                                uid: doc.id,
+                                ...profileSnap.data()
+                            });
+                         }
+                     }));
+                 });
+
+                 // Wait for all profile fetches to complete
+                 await Promise.all(batchPromises);
+                 renderUserList(users);
+             }, (error) => {
+                 console.error("Error fetching users:", error);
+                 userList.innerHTML = `<div class="p-4 text-center neon-text">Error fetching user data.</div>`;
+             });
+        }
+        
+        /** Renders the user list table */
+        function renderUserList(users) {
+            userList.innerHTML = '';
+            
+            if (users.length === 0) {
+                userList.innerHTML = `<div class="p-4 text-center">No users registered.</div>`;
+                return;
+            }
+
+            users.forEach(user => {
+                const listItem = document.createElement('div');
+                listItem.className = 'list-item';
+                listItem.style.gridTemplateColumns = '1fr 2fr 1fr'; // Adjust column width for this list
+                
+                listItem.innerHTML = `
+                    <div class="text-xs opacity-75">${user.uid.substring(0, 8)}...</div>
+                    <div>${user.email} <span class="neon-green-text text-xs">(${user.username})</span></div>
+                    <div class="flex justify-end">
+                        <button class="action-btn btn-delete" data-action="delete-user" data-id="${user.uid}">DELETE</button>
+                    </div>
+                `;
+                userList.appendChild(listItem);
+            });
+        }
+
+
+        // --- ACTION HANDLERS ---
+
+        // Listener for dynamic actions on Team List
+        teamList.addEventListener('click', async (e) => {
+            const target = e.target;
+            const action = target.dataset.action;
+            const teamId = target.dataset.id;
+            
+            if (!action || !teamId) return;
+
+            if (action === 'delete-team') {
+                if (confirm(`Are you sure you want to permanently delete Team ${teamId}?`)) {
+                    // FIX: Ensure delete is done using admin privileges if deployed securely.
+                    await deleteTeam(teamId);
+                }
+            } else if (action === 'disqualify' || action === 'reactivate') {
+                await toggleTeamStatus(teamId, action === 'disqualify');
+            }
+        });
+
+        // Listener for dynamic actions on User List
+        userList.addEventListener('click', async (e) => {
+            const target = e.target;
+            const action = target.dataset.action;
+            const userId = target.dataset.id;
+            
+            if (!action || !userId) return;
+
+            if (action === 'delete-user') {
+                if (confirm(`Are you sure you want to delete User ${userId}? (This only deletes their profile data in Firestore)`)) {
+                    await deleteUserProfile(userId);
+                }
+            }
+        });
+
+        // --- ADMIN DATABASE OPERATIONS ---
+
+        async function toggleTeamStatus(teamId, disqualify) {
+            const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, teamId);
+            try {
+                await updateDoc(teamRef, {
+                    disqualified: disqualify || false
+                });
+                showToast('success', `Team ${teamId} ${disqualify ? 'disqualified' : 'reactivated'}.`);
+            } catch (e) {
+                console.error("Error toggling team status:", e);
+                showToast('error', 'Failed to update team status.');
+            }
+        }
+        
+        async function deleteTeam(teamId) {
+            const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, teamId);
+            try {
+                // In a real system, you'd also need to delete all related challenge submissions and user metadata.
+                await deleteDoc(teamRef); 
+                showToast('success', `Team ${teamId} deleted.`);
+            } catch (e) {
+                console.error("Error deleting team:", e);
+                showToast('error', 'Failed to delete team.');
+            }
+        }
+
+        async function deleteUserProfile(userId) {
+            // Delete the main profile document within the private user folder
+            const profileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
+            try {
+                // NOTE: To truly delete the user from Firebase Auth, a secure Cloud Function or Admin SDK is required. 
+                // This simulates deleting the associated public/private data.
+                await deleteDoc(profileRef);
+                showToast('success', `User profile ${userId} deleted.`);
+            } catch (e) {
+                console.error("Error deleting user profile:", e);
+                showToast('error', 'Failed to delete user profile.');
+            }
+        }
+
+
+        // --- AUTHENTICATION GATE ---
+        onAuthStateChanged(auth, (user) => {
+            currentUserId = user ? user.uid : null;
+            
+            if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL) {
+                authRequired.style.display = 'none';
+                adminContent.style.display = 'block';
+                
+                // Start listeners for real-time data
+                listenForTeams();
+                listenForUsers();
+            } else {
+                authRequired.style.display = 'block';
+                adminContent.style.display = 'none';
+                console.warn("Access denied. Not signed in as admin.");
+            }
+        });
+    </script>
+</body>
+</html>

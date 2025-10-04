@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Arena - Rules</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-glass">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">HAvOC<span class="neon-text"> CTF</span></span>
+            </div>
+            <div class="nav-links">
+                <!-- <a href="index copy.html" class="nav-link active">Home</a> -->
+                <a href="afterlogin.html" class="nav-link active">Dashboard</a>
+                <a href="challenges.html" class="nav-link">Challenges</a>
+                <a href="scoreboard.html" class="nav-link">Scoreboard</a>
+                <a href="rules.html" class="nav-link">Rules</a>
+                <!-- <button id="signOutBtnNav" type="button" class="flex items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> LOGOUT
+                </button> -->
+            </div>
+            <div class="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu glass-dark">
+        <!-- <a href="index.html" class="mobile-link">Home</a> -->
+        <a href="dashboard.html" class="mobile-link">Challenges</a>
+        <a href="scoreboard.html" class="mobile-link">Scoreboard</a>
+        <a href="rules.html" class="mobile-link">Rules</a>
+    </div>
+
+    <!-- Rules Section -->
+    <section class="rules-section">
+        <div class="container">
+            <div class="section-header">
+                <h1 class="heading-condensed neon-text">RULES & GUIDELINES</h1>
+                <p class="section-subtitle">Fair play guidelines and competition rules</p>
+            </div>
+
+            <div class="rules-content">
+                <!-- General Rules -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">📋 General Rules</h2>
+                    <ul class="rules-list">
+                        <li>• Teams can have up to 4 members maximum</li>
+                        <li>• Individual participation is allowed and encouraged</li>
+                        <li>• All team members must register with valid email addresses</li>
+                        <li>• Flag format: <code>flag{...}</code> unless otherwise specified</li>
+                        <li>• Flags are case-sensitive and must be submitted exactly as found</li>
+                        <li>• Each challenge can only be solved once per team</li>
+                    </ul>
+                </div>
+
+                <!-- Competition Guidelines -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">🏆 Competition Guidelines</h2>
+                    <ul class="rules-list">
+                        <li>• Competition duration: 48 hours</li>
+                        <li>• Scoring is based on challenge difficulty and solve time</li>
+                        <li>• Dynamic scoring: points decrease as more teams solve</li>
+                        <li>• Hints may reduce the total points awarded</li>
+                        <li>• Late submissions after deadline will not be accepted</li>
+                        <li>• Organizers' decisions are final</li>
+                    </ul>
+                </div>
+
+                <!-- Prohibited Activities -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">🚫 Prohibited Activities</h2>
+                    <ul class="rules-list">
+                        <li>• Attacking competition infrastructure or other teams</li>
+                        <li>• Sharing flags, solutions, or writeups during competition</li>
+                        <li>• Using multiple accounts or fake registrations</li>
+                        <li>• Bruteforcing flags or attempting to overload servers</li>
+                        <li>• Any form of cheating or unsportsmanlike conduct</li>
+                        <li>• Reverse engineering other teams' submissions</li>
+                    </ul>
+                </div>
+
+                <!-- Technical Requirements -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">💻 Technical Requirements</h2>
+                    <ul class="rules-list">
+                        <li>• Stable internet connection required</li>
+                        <li>• Modern web browser with JavaScript enabled</li>
+                        <li>• VPN usage is allowed and sometimes recommended</li>
+                        <li>• SSH access and common security tools recommended</li>
+                        <li>• Programming knowledge in Python, C, Assembly helpful</li>
+                        <li>• Basic command line proficiency expected</li>
+                    </ul>
+                </div>
+
+                <!-- Scoring System -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">📊 Scoring System</h2>
+                    <div class="scoring-table">
+                        <div class="scoring-row">
+                            <span class="difficulty easy">Easy</span>
+                            <span class="points">100-200 points</span>
+                        </div>
+                        <div class="scoring-row">
+                            <span class="difficulty medium">Medium</span>
+                            <span class="points">250-400 points</span>
+                        </div>
+                        <div class="scoring-row">
+                            <span class="difficulty hard">Hard</span>
+                            <span class="points">450-750 points</span>
+                        </div>
+                    </div>
+                    <p class="scoring-note">
+                        Points decrease dynamically as more teams solve each challenge.
+                        First blood bonuses may apply to certain challenges.
+                    </p>
+                </div>
+
+                <!-- Support & Contact -->
+                <div class="rules-card glass hover-lift">
+                    <h2 class="rules-title">📞 Support & Contact</h2>
+                    <ul class="rules-list">
+                        <li>• Technical issues: qtuxathon@sairamtap.edu.in</li>
+                        <li>• Discord support channel: #ctf-support</li>
+                        <li>• Challenge clarifications will be posted publicly</li>
+                        <li>• Response time: Usually within 30 minutes during competition</li>
+                        <li>• Emergency contact: Available on Discord</li>
+                        <li>• Post-competition feedback welcome</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quick Start Guide -->
+            <div class="quick-start glass">
+                <h2 class="quick-start-title">🚀 Quick Start Guide</h2>
+                <div class="steps-grid">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Register</h3>
+                        <p>Create your team and invite members</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Explore</h3>
+                        <p>Browse available challenges</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Solve</h3>
+                        <p>Find flags and submit solutions</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <h3>Win</h3>
+                        <p>Climb the leaderboard!</p>
+                    </div>
+                </div>
+                <div class="start-button-container">
+                    <button class="btn-primary" onclick="window.location.href='dashboard.html'">
+                        Start Competing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer glass-dark">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">HAvOC<span class="neon-text"> CTF</span></span>
+                    <p>The ultimate cybersecurity challenge platform</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <!-- <a href="index.html">Home</a> -->
+                    <a href="challenges.html">Challenges</a>
+                    <a href="scoreboard.html">Scoreboard</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>Contact</h4>
+                    <p>qtuxathon@sairamtap.edu.in</p>
+                    <p>Discord: HAvOC_CTF</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 HAvOC_CTF. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="scripts.js"></script>
+</body>
+</html>

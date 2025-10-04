@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Arena - Scoreboard</title>
+    <!-- Load Tailwind CSS and Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Load D3.js for the Score Over Time Graph -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        /* CSS Variables - Synchronized with all other CTF files */
+        :root {
+            /* Core Colors - CTF Theme */
+            --background: #0b0b0b;
+            --foreground: #ffffff;
+            
+            /* Neon Red Palette */
+            --neon-red: #ff2b2b;
+            --neon-red-glow: #ff2b2b;
+            
+            /* Glass System */
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-bg-dark: rgba(0, 0, 0, 0.3);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-red: rgba(255, 43, 43, 0.1);
+
+            /* Fonts & Aesthetics */
+            --font-body: 'JetBrains Mono', monospace;
+            --font-heading: 'Orbitron', monospace;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --shadow-neon: 0 0 20px rgba(255, 43, 43, 0.5);
+            --radius: 1rem;
+            --shadow-lift: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Reset & Base */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: 6rem; /* Space for fixed nav */
+            
+            /* Subtle radial gradient background */
+            background-image: radial-gradient(circle at 20% 30%, rgba(255, 43, 43, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(255, 43, 43, 0.05) 0%, transparent 50%);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        section { padding: 5rem 0; }
+        
+        /* Typography */
+        .heading-condensed {
+            font-family: var(--font-heading);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 0.9;
+        }
+
+        .code-mono { font-family: var(--font-body); font-weight: 500; }
+
+        .neon-text {
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+        }
+
+        /* Glass Effects */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-glass);
+            border-radius: var(--radius);
+        }
+
+        .glass-dark {
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-glass);
+            border-radius: var(--radius);
+        }
+        
+        .hover-lift { transition: var(--transition-smooth); }
+        .hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+
+        /* --- Navigation Styles --- */
+        .nav-glass {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-glass .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand .logo {
+            font-family: var(--font-heading);
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--foreground);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+            position: relative;
+            font-family: var(--font-body);
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--neon-red);
+            text-shadow: 0 0 5px rgba(255, 43, 43, 0.8);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--neon-red);
+            box-shadow: 0 0 5px rgba(255, 43, 43, 0.8);
+        }
+
+        /* Mobile Navigation */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 3px;
+        }
+
+        .nav-toggle span {
+            width: 25px;
+            height: 2px;
+            background: var(--foreground);
+            transition: var(--transition-smooth);
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 80px; /* Adjusted for fixed nav height */
+            left: -100%;
+            width: 100%;
+            height: calc(100vh - 80px);
+            padding: 2rem;
+            transition: var(--transition-smooth);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: var(--glass-bg-dark);
+        }
+
+        .mobile-menu.active {
+            left: 0;
+        }
+        
+        .mobile-link {
+            color: var(--foreground);
+            text-decoration: none;
+            padding: 1rem;
+            border-radius: var(--radius);
+            transition: var(--transition-smooth);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .nav-toggle { display: flex; }
+        }
+
+        /* Scoreboard Section Styles */
+        .scoreboard-section {
+            padding: 2rem 0;
+            min-height: 100vh;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 4rem;
+        }
+
+        .section-header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: var(--font-body);
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            padding: 0.5rem;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--foreground);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: var(--font-body);
+        }
+
+        .toggle-btn.active,
+        .toggle-btn:hover {
+            background: var(--glass-red);
+            color: var(--neon-red);
+            box-shadow: var(--shadow-neon);
+        }
+
+        /* Leaderboard */
+        .leaderboard-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .leaderboard {
+            overflow: hidden;
+            margin-bottom: 2rem;
+            border-radius: var(--radius); /* Ensures glass corners are respected */
+        }
+
+        .leaderboard-header {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 120px;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+            background: rgba(0, 0, 0, 0.5); 
+        }
+
+        .leaderboard-entry {
+            padding: 1rem 2rem;
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 120px;
+            gap: 1rem;
+            align-items: center;
+            transition: var(--transition-smooth);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-entry:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .leaderboard-entry:hover {
+            background: rgba(255, 43, 43, 0.05);
+        }
+
+        .leaderboard-entry.top-3 {
+            background: var(--glass-red);
+            border-color: var(--neon-red);
+        }
+
+        .rank-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .rank-icon { font-size: 1.5rem; }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .team-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--neon-red);
+            font-family: var(--font-heading);
+        }
+
+        .team-name { font-weight: 600; }
+        .team-name.top-3 { color: var(--neon-red); }
+        .team-subtitle { font-size: 0.8rem; opacity: 0.6; }
+
+        .solved-count { text-align: center; }
+        .solved-number { font-family: var(--font-body); font-weight: 600; font-size: 1.1rem; }
+        .solved-label { font-size: 0.7rem; opacity: 0.6; }
+
+        .score-display { text-align: right; }
+        .score-number { font-family: var(--font-body); font-weight: 700; font-size: 1.3rem; }
+        .score-number.top-score { color: var(--neon-red); text-shadow: 0 0 10px rgba(255, 43, 43, 0.8); }
+        .score-label { font-size: 0.7rem; opacity: 0.6; }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-heading);
+        }
+
+        .stat-label {
+            opacity: 0.7;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+
+        /* Footer */
+        .footer {
+            margin-top: 4rem;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        /* D3 Chart Specific Styles */
+        .chart-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        #score-chart svg {
+            font-family: var(--font-body);
+            color: var(--foreground);
+        }
+        #score-chart .axis path,
+        #score-chart .axis line {
+            stroke: rgba(255, 255, 255, 0.3);
+        }
+        #score-chart .axis text {
+            fill: rgba(255, 255, 255, 0.6);
+            font-size: 0.7rem;
+        }
+        .line {
+            fill: none;
+            stroke-width: 3px;
+        }
+        .team-label {
+            fill: var(--foreground);
+            font-size: 0.8rem;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-glass .container {
+                padding: 0 15px;
+            }
+            .leaderboard-header,
+            .leaderboard-entry {
+                grid-template-columns: 60px 1fr 80px 100px;
+                padding: 1rem;
+                font-size: 0.8rem;
+            }
+            .team-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
+            .stats-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="scanlines">
+    <!-- Navigation -->
+    <nav class="nav-glass">
+        <div class="container nav-content">
+            <div class="nav-brand">
+                <span class="logo">HAvOC<span class="neon-text">CTF</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="afterlogin.html" class="nav-link">Dashboard</a>
+                <a href="challenges.html" class="nav-link">Challenges</a>
+                <a href="scoreboard.html" class="nav-link active">Scoreboard</a>
+                <a href="rules.html" class="nav-link">Rules</a>
+            </div>
+            <div class="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu glass-dark">
+        <a href="afterlogin.html" class="mobile-link">Dashboard</a>
+        <a href="challenges.html" class="mobile-link">Challenges</a>
+        <a href="scoreboard.html" class="mobile-link active">Scoreboard</a>
+        <a href="rules.html" class="mobile-link">Rules</a>
+    </div>
+
+    <!-- Scoreboard Section -->
+    <section class="scoreboard-section">
+        <div class="container">
+            <div class="section-header">
+                <h1 class="heading-condensed neon-text">SCOREBOARD</h1>
+                <p class="section-subtitle">See how you stack up against other teams</p>
+            </div>
+            
+            <div class="leaderboard-container">
+                <!-- Score Over Time Chart Container -->
+                <div class="chart-container glass mb-8 p-4 md:p-8 hover-lift">
+                    <h2 class="text-xl font-bold mb-4 code-mono">Score Over Time</h2>
+                    <div id="score-chart" class="w-full"></div>
+                </div>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <div class="glass toggle-container">
+                    <button class="toggle-btn active" data-view="global" id="btn-global">
+                        🌍 Global
+                    </button>
+                    <button class="toggle-btn" data-view="friends" id="btn-my-team">
+                        👥 My Team
+                    </button>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard-container">
+                <div class="leaderboard glass hover-lift">
+                    <!-- Header -->
+                    <div class="leaderboard-header">
+                        <div class="rank-col">Rank</div>
+                        <div class="team-col">Team</div>
+                        <div class="solved-col">Solved</div>
+                        <div class="score-col">Score</div>
+                    </div>
+
+                    <!-- Leaderboard entries -->
+                    <div class="leaderboard-body" id="leaderboardBody">
+                        <!-- Entries will be populated by JavaScript -->
+                         <div class="text-center p-8 code-mono" id="loadingMessage">Loading real-time data...</div>
+                    </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="stats-summary">
+                    <div class="stat-card glass hover-lift">
+                        <div class="stat-number neon-text code-mono" id="activeTeams">...</div>
+                        <div class="stat-label">Active Teams</div>
+                    </div>
+                    
+                    <div class="stat-card glass hover-lift">
+                        <div class="stat-number neon-text code-mono" id="topScore">...</div>
+                        <div class="stat-label">Top Score</div>
+                    </div>
+                    
+                    <div class="stat-card glass hover-lift">
+                        <div class="stat-number neon-text code-mono" id="maxSolved">...</div>
+                        <div class="stat-label">Max Solved</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+   <!-- Footer -->
+    <footer class="footer glass-dark">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">CTF<span class="neon-text"> Arena</span></span>
+                    <p>The ultimate cybersecurity challenge platform</p>
+                </div>
+                <div class="footer-links">
+                    <h4><span class="logo neon-text">Quick Links</span></h4>
+                    <a href="afterlogin.html">Dashboard</a><br>
+                    <a href="challenges.html">Challenges</a><br>
+                    <a href="scoreboard.html">Scoreboard</a>
+                </div>
+                <div class="footer-contact">
+                    <h4><span class="logo neon-text">Contact</span></h4>
+                    <p>admin@ctfarena.com</p>
+                    <p>Discord: CTFArena</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 CTF Arena. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Consolidated JavaScript Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            orderBy, 
+            onSnapshot,
+            limit,
+            where // Added where for filtering
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration (Synchronized) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
+            authDomain: "havoc-985d0.firebaseapp.com",
+            databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
+            projectId: "havoc-985d0",
+            storageBucket: "havoc-985d0.firebasestorage.app",
+            messagingSenderId: "8269389875",
+            appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
+            measurementId: "G-Y6FXWB2RWY"
+        };
+        const APP_ID = firebaseConfig.projectId; 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Mock Chart Data (Kept as we don't have historical data) ---
+        const MOCK_CHART_DATA = [
+            { date: new Date(2025, 0, 1, 1), CyberRebels: 500, 'Exploit Kings': 400, 'Neon Ninjas': 300, 'Ghost Hackers': 200, 'Root Force': 100 },
+            { date: new Date(2025, 0, 1, 2), CyberRebels: 1500, 'Exploit Kings': 1200, 'Neon Ninjas': 900, 'Ghost Hackers': 700, 'Root Force': 500 },
+            { date: new Date(2025, 0, 1, 3), CyberRebels: 2800, 'Exploit Kings': 2500, 'Neon Ninjas': 2100, 'Ghost Hackers': 1800, 'Root Force': 1500 },
+            { date: new Date(2025, 0, 1, 4), CyberRebels: 3500, 'Exploit Kings': 3200, 'Neon Ninjas': 2900, 'Ghost Hackers': 2600, 'Root Force': 2200 },
+            { date: new Date(2025, 0, 1, 5), CyberRebels: 4000, 'Exploit Kings': 3800, 'Neon Ninjas': 3400, 'Ghost Hackers': 3200, 'Root Force': 2800 },
+        ];
+        
+        let currentUserId = null; // To hold the user's UID if logged in
+        let userTeamId = null; // Placeholder for user's team ID (would need a separate fetch)
+        let currentTeamName = null; // New variable to hold user's team name
+
+        // Helper to convert real teams into mock chart data format for coloring/labeling
+        function getTeamsForChart(liveTeams) {
+            // FIX: Safely check if liveTeams is an array before mapping
+            const teamsToMap = Array.isArray(liveTeams) ? liveTeams : [];
+            const teamNames = teamsToMap.map(t => t.name);
+            
+            // Map the mock data to include only the relevant teams (or add them with zero scores)
+            const dynamicChartData = MOCK_CHART_DATA.map(d => {
+                const newD = { date: d.date };
+                teamNames.forEach(name => {
+                    // Use mock data if the team name exists in mock data, otherwise default to 0
+                    const mockScore = d[name] !== undefined ? d[name] : 0;
+                    newD[name] = mockScore;
+                });
+                return newD;
+            });
+            
+            return dynamicChartData;
+        }
+
+
+        // --- D3 Chart Logic (Score Over Time) ---
+        function renderChart(liveTeams) {
+            try {
+                const container = d3.select("#score-chart");
+                container.html(""); // Clear previous chart
+                
+                const data = getTeamsForChart(liveTeams); 
+                
+                // Get the list of current team names present in the data
+                const teamKeys = Object.keys(data[0] || {}).filter(key => key !== 'date');
+                
+                // If there are no teams, display a message and exit
+                if (teamKeys.length === 0) {
+                     container.html('<p class="neon-text text-center pt-8">No teams found to display on the chart.</p>');
+                     return;
+                }
+
+                const margin = { top: 20, right: 80, bottom: 50, left: 60 };
+                const containerElement = document.querySelector('.chart-container');
+                if (!containerElement) return;
+                
+                const containerWidth = containerElement.clientWidth;
+                const width = Math.max(containerWidth - margin.left - margin.right, 600); 
+                const height = 400 - margin.top - margin.bottom;
+
+                const svg = container.append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                // Scales
+                const x = d3.scaleTime()
+                    .domain(d3.extent(data, d => d.date))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d3.max(teamKeys, k => d[k]))])
+                    .range([height, 0]);
+
+                const color = d3.scaleOrdinal()
+                    .domain(teamKeys)
+                    .range(["#ff6b6b", "#00d2d3", "#ffd700", "#54a0ff", "#ff9ff3", "#cccccc"]); // Added one more color
+
+                // Axes
+                svg.append("g")
+                    .attr("class", "axis x-axis")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(5).tickFormat(d3.timeFormat("%H:%M")));
+
+                svg.append("g")
+                    .attr("class", "axis y-axis")
+                    .call(d3.axisLeft(y));
+                
+                // Grid lines
+                svg.selectAll(".grid-line").data(y.ticks(5)).enter()
+                    .append("line")
+                    .attr("class", "grid-line")
+                    .attr("x1", 0)
+                    .attr("x2", width)
+                    .attr("y1", d => y(d))
+                    .attr("y2", d => y(d))
+                    .attr("stroke", "rgba(255,255,255,0.1)")
+                    .attr("stroke-dasharray", "2,2");
+
+                // Data Transformation
+                const teams = teamKeys.map(name => {
+                    return {
+                        name: name,
+                        values: data.map(d => ({ date: d.date, score: d[name], teamName: name }))
+                    };
+                });
+
+                // Line Generator
+                const line = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => y(d.score))
+                    .curve(d3.curveMonotoneX);
+
+                // Draw Lines
+                const teamLines = svg.selectAll(".team")
+                    .data(teams)
+                    .enter().append("g")
+                    .attr("class", "team");
+
+                teamLines.append("path")
+                    .attr("class", "line")
+                    .attr("d", d => line(d.values))
+                    .style("stroke", d => color(d.name))
+                    .style("stroke-width", 3);
+                
+                // Add dots at data points
+                teamLines.selectAll("dot")
+                    .data(d => d.values)
+                    .enter().append("circle")
+                    .attr("r", 3)
+                    .attr("cx", d => x(d.date))
+                    .attr("cy", d => y(d.score))
+                    .attr("fill", d => color(d.teamName)); 
+                    
+                // Add simplified legend labels at the end of the line
+                teamLines.append("text")
+                    .datum(d => ({ name: d.name, value: d.values[d.values.length - 1] }))
+                    .attr("transform", d => `translate(${x(d.value.date)},${y(d.value.score)})`)
+                    .attr("x", 5)
+                    .attr("dy", "0.35em")
+                    .style("font-size", "0.8rem")
+                    .style("fill", d => color(d.name))
+                    .text(d => d.name);
+
+            } catch (e) {
+                console.error("D3 Chart Rendering Failed:", e);
+                const chartDiv = document.getElementById('score-chart');
+                if (chartDiv) {
+                    chartDiv.innerHTML = '<p class="neon-text text-center pt-8">Error loading visualization. Check console for details.</p>';
+                }
+            }
+        }
+
+        // --- Leaderboard Rendering ---
+        function createLeaderboardEntry(team, rank) {
+            const isTop3 = rank <= 3;
+            const teamNameClass = isTop3 ? 'top-3' : '';
+            const scoreClass = isTop3 ? 'top-score' : '';
+            
+            let rankContent;
+            if (rank === 1) rankContent = '<i class="fas fa-crown rank-icon neon-text"></i>';
+            else if (rank === 2) rankContent = '<i class="fas fa-medal rank-icon text-gray-400"></i>';
+            else if (rank === 3) rankContent = '<i class="fas fa-medal rank-icon text-yellow-600"></i>';
+            else rankContent = rank;
+            
+            // Generate initials safely
+            const initials = team.name ? team.name.split(' ').map(n => n[0]).join('').substring(0, 2) : '??';
+
+            const entry = document.createElement('div');
+            entry.className = `leaderboard-entry ${isTop3 ? 'top-3' : ''}`;
+            entry.innerHTML = `
+                <div class="rank-display">${rankContent}</div>
+                <div class="team-info">
+                    <div class="team-avatar">${initials}</div>
+                    <div class="team-names">
+                        <div class="team-name ${teamNameClass}">${team.name.toUpperCase()}</div>
+                        <div class="team-subtitle">Leader: ${team.leaderName ? team.leaderName.toUpperCase() : 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="solved-count">
+                    <div class="solved-number">${team.solved || 0}</div>
+                    <div class="solved-label">Solved</div>
+                </div>
+                <div class="score-display">
+                    <div class="score-number ${scoreClass}">${(team.score || 0).toLocaleString()}</div>
+                    <div class="score-label">Points</div>
+                </div>
+            `;
+            return entry;
+        }
+
+        function renderLeaderboard(data) {
+            const body = document.getElementById('leaderboardBody');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            // Hide loading message and clear board
+            if (loadingMessage) loadingMessage.style.display = 'none';
+            body.innerHTML = '';
+            
+            // Sort data by score (descending)
+            const sortedData = data.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            // Populate leaderboard
+            if (sortedData.length > 0) {
+                sortedData.forEach((team, index) => {
+                    body.appendChild(createLeaderboardEntry(team, index + 1));
+                });
+
+                // Update summary stats
+                document.getElementById('activeTeams').textContent = sortedData.length;
+                document.getElementById('topScore').textContent = (sortedData[0].score || 0).toLocaleString();
+                document.getElementById('maxSolved').textContent = (sortedData[0].solved || 0);
+            } else {
+                body.innerHTML = '<div class="text-center p-8 code-mono opacity-75">No teams have registered yet.</div>';
+                document.getElementById('activeTeams').textContent = 0;
+                document.getElementById('topScore').textContent = '0';
+                document.getElementById('maxSolved').textContent = '0';
+            }
+        }
+
+        /** Main function to set up real-time scoreboard listener for GLOBAL view. */
+        function listenForGlobalScoreboard() {
+             const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
+            
+            // Query: Get all teams ordered by score descending
+            const q = query(teamsRef, orderBy("score", "desc"));
+
+            console.log("Starting real-time GLOBAL scoreboard listener...");
+            
+            // Start real-time listener (onSnapshot)
+            onSnapshot(q, (snapshot) => {
+                const teams = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    teams.push({
+                        id: doc.id,
+                        name: data.name,
+                        score: data.score,
+                        solved: data.solvedChallenges ? Object.keys(data.solvedChallenges).length : 0, // Calculate solved count
+                        leaderName: data.leaderName,
+                    });
+                });
+                
+                renderLeaderboard(teams);
+                
+                // Redraw chart with current participating teams
+                if (typeof d3 !== 'undefined') {
+                    renderChart(teams); 
+                }
+
+            }, (error) => {
+                console.error("Error fetching scoreboard data:", error);
+                const body = document.getElementById('leaderboardBody');
+                body.innerHTML = '<div class="text-center p-8 code-mono opacity-75 neon-text">Error fetching data. Check Firebase permissions.</div>';
+            });
+        }
+        
+        /** Secondary function to listen for My Team view (requires login) */
+        function listenForMyTeamScoreboard() {
+            if (!currentUserId || !userTeamId || !currentTeamName) {
+                const body = document.getElementById('leaderboardBody');
+                body.innerHTML = '<div class="text-center p-8 code-mono opacity-75 neon-text">Please log in and join a team to see your team\'s standing.</div>';
+                return;
+            }
+
+            const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
+            
+            // Query: Find teams where name matches the current user's team name
+            const q = query(teamsRef, where("name", "==", currentTeamName));
+            
+            console.log("Starting real-time MY TEAM scoreboard listener...");
+            
+            onSnapshot(q, (snapshot) => {
+                const teams = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    teams.push({
+                        id: doc.id,
+                        name: data.name,
+                        score: data.score,
+                        solved: data.solvedChallenges ? Object.keys(data.solvedChallenges).length : 0,
+                        leaderName: data.leaderName,
+                    });
+                });
+
+                renderLeaderboard(teams);
+                
+                // Redraw chart with only My Team data
+                if (typeof d3 !== 'undefined') {
+                    renderChart(teams); 
+                }
+
+            }, (error) => {
+                console.error("Error fetching my team scoreboard data:", error);
+                const body = document.getElementById('leaderboardBody');
+                body.innerHTML = '<div class="text-center p-8 code-mono opacity-75 neon-text">Error fetching team data.</div>';
+            });
+        }
+        
+        /** Handle changing between Global and My Team view */
+        function changeView(view) {
+            const globalBtn = document.getElementById('btn-global');
+            const myTeamBtn = document.getElementById('btn-my-team');
+            
+            if (view === 'global') {
+                myTeamBtn.classList.remove('active');
+                globalBtn.classList.add('active');
+                listenForGlobalScoreboard();
+            } else if (view === 'friends') {
+                 globalBtn.classList.remove('active');
+                 myTeamBtn.classList.add('active');
+                 listenForMyTeamScoreboard();
+            }
+        }
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check auth status (required for 'My Team' view later)
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    // In a real app, you would fetch user's team ID/Name here. Mocking for now:
+                    // userTeamId = 'mockTeamId'; 
+                    // currentTeamName = 'CyberRebels'; 
+                }
+                // Start listening for global scoreboard data immediately on load
+                listenForGlobalScoreboard(); 
+            });
+            
+            // Initial chart rendering
+            if (typeof d3 !== 'undefined') {
+                 renderChart(null);
+            } else {
+                console.warn("D3.js not loaded. Skipping chart rendering.");
+            }
+            
+            // Resize listener for D3 chart responsiveness
+            const chartContainer = document.querySelector('.chart-container');
+            if (chartContainer) {
+                window.addEventListener('resize', renderChart);
+            }
+            
+            // ATTACH EVENT LISTENERS to the toggle buttons (FIX for ReferenceError)
+            document.getElementById('btn-global').addEventListener('click', () => changeView('global'));
+            document.getElementById('btn-my-team').addEventListener('click', () => changeView('friends'));
+        });
+    </script>
+</body>
+</html>

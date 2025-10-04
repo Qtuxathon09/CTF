@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAvOC CTF | The Ultimate Cyber Challenge</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Using Inter for primary font, Orbitron for headings -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS Variables - Enhanced for Cyberpunk/Glass Theme */
+        :root {
+            /* Core Colors - Red/Black/White */
+            --color-black-bg: #030303;
+            --color-red-neon: #ff2b2b;
+            --color-white-text: #ffffff;
+            
+            /* Glass System - INCREASED TRANSPARENCY */
+            --glass-bg: rgba(255, 255, 255, 0.05); /* Light glass */
+            --glass-bg-dark: rgba(0, 0, 0, 0.4);   /* Dark glass for nav/dark cards */
+            --glass-border: rgba(255, 255, 255, 0.1);
+            
+            /* Shadows & Glow */
+            --shadow-glass: 0 8px 30px 0 rgba(0, 0, 0, 0.6);
+            --shadow-red-glow: 0 0 15px rgba(255, 43, 43, 0.7);
+            
+            /* Aesthetics */
+            --transition-smooth: all 0.3s ease-in-out;
+            --radius-sharp: 0.5rem;
+            --radius-round: 1rem;
+            
+            /* New Font Variable */
+            --font-body: 'Inter', sans-serif;
+            --font-heading: 'Orbitron', monospace;
+        }
+
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Applied Inter font */
+            font-family: var(--font-body); 
+            background: var(--color-black-bg);
+            color: var(--color-white-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* Subtle radial gradient for depth */
+            background-image: radial-gradient(circle at 20% 30%, rgba(255, 43, 43, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 80% 70%, rgba(255, 43, 43, 0.04) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        section {
+            padding: 5rem 0;
+        }
+        
+        /* Typography */
+        .neon-text {
+            color: var(--color-red-neon);
+            text-shadow: var(--shadow-red-glow);
+        }
+
+        /* Glass Effects */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-glass);
+            border-radius: var(--radius-round);
+        }
+        
+        /* --- NAVIGATION (Header Image Replication) --- */
+        .nav-glass {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 0.75rem 0;
+        }
+
+        .nav-bar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* Liquid Glass Effect */
+            background: rgba(0, 0, 0, 0.3); /* Base dark transparent */
+            backdrop-filter: blur(20px) saturate(150%); /* Increased blur */
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-round);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            padding: 0.75rem 1.5rem;
+            margin: 0.75rem auto; 
+            max-width: 95%;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-text {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: clamp(1.2rem, 3vw, 1.75rem);
+            color: var(--color-white-text);
+            letter-spacing: -0.05em;
+        }
+        
+        .logo-highlight {
+            color: var(--color-red-neon);
+            font-weight: 900;
+            text-shadow: var(--shadow-red-glow);
+            margin-left: 0.2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--color-white-text);
+            text-decoration: none;
+            font-size: 0.95rem; /* slightly larger font */
+            font-weight: 600; /* Bolder font weight for links */
+            transition: var(--transition-smooth);
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-link:hover {
+            color: var(--color-red-neon);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; /* Moved down for better visibility */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 2px;
+            background: var(--color-red-neon);
+            border-radius: 999px;
+            box-shadow: var(--shadow-red-glow);
+        }
+        
+        /* GET ACCESS CTA Button */
+        .cta-link {
+            background: var(--color-red-neon);
+            border: 1px solid var(--color-red-neon);
+            color: var(--color-black-bg) !important;
+            font-weight: 700;
+            padding: 0.4rem 1.2rem;
+            border-radius: var(--radius-sharp);
+            text-shadow: none;
+            transition: var(--transition-smooth);
+        }
+        
+        .cta-link:hover {
+            background: var(--color-black-bg);
+            color: var(--color-red-neon) !important;
+            box-shadow: var(--shadow-red-glow);
+        }
+
+        /* Mobile Menu Toggle */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .nav-toggle span {
+            width: 25px;
+            height: 2px;
+            background: var(--color-white-text);
+            transition: var(--transition-smooth);
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 100px;
+            left: -100%;
+            width: 100%;
+            height: calc(100vh - 100px);
+            padding: 2rem;
+            transition: var(--transition-smooth);
+            z-index: 990;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.95);
+        }
+
+        .mobile-menu.active {
+            left: 0;
+        }
+
+        .mobile-link {
+            color: var(--color-white-text);
+            text-decoration: none;
+            padding: 1rem;
+            border-radius: var(--radius-sharp);
+            transition: var(--transition-smooth);
+            border-left: 3px solid transparent;
+            font-family: var(--font-body); 
+            font-weight: 600;
+        }
+
+        .mobile-link:hover, .mobile-link.active {
+            border-left: 3px solid var(--color-red-neon);
+            background: rgba(255, 43, 43, 0.1);
+            color: var(--color-red-neon);
+        }
+
+        @media (max-width: 900px) {
+            .nav-links {
+                display: none;
+            }
+            .nav-toggle {
+                display: flex;
+            }
+            .nav-bar-content {
+                padding: 0.75rem 1rem;
+            }
+        }
+        
+        /* --- HERO SECTION --- */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding-top: 10rem;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hero-glass {
+            padding: 4rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-family: var(--font-heading);
+            font-weight: 900;
+            font-size: clamp(3rem, 10vw, 8rem);
+            letter-spacing: -0.05em;
+            line-height: 0.9;
+            margin-bottom: 1.5rem;
+            /* Gradient Text Effect */
+            background: linear-gradient(135deg, var(--color-red-neon), #ff8c8c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 43, 43, 0.4);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            margin-bottom: 3rem;
+            opacity: 0.9;
+            font-weight: 600; /* Bolder subtitle */
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            background: var(--color-red-neon);
+            border: 2px solid var(--color-red-neon);
+            color: var(--color-black-bg);
+            padding: 14px 30px;
+            border-radius: var(--radius-sharp);
+            font-family: var(--font-body); /* Changed to Inter */
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-decoration: none;
+            box-shadow: var(--shadow-red-glow);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-black-bg);
+            color: var(--color-red-neon);
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(255, 43, 43, 0.8);
+        }
+        
+        /* --- STATS SECTION --- */
+        .stats-section {
+            padding: 4rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            transition: var(--transition-smooth);
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-red-neon);
+            box-shadow: 0 0 20px rgba(255, 43, 43, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-heading);
+            line-height: 1;
+        }
+
+        .stat-label {
+            opacity: 0.8;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600; /* Bolder label */
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            padding: 3rem 0 1rem;
+            background: var(--color-black-bg);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-brand .logo-text {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .footer-brand p {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .footer-links h4,
+        .footer-contact h4 {
+            color: var(--color-red-neon);
+            font-family: var(--font-heading);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--color-white-text);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: var(--transition-smooth);
+            opacity: 0.8;
+            font-weight: 600; /* Bolder footer links */
+        }
+
+        .footer-links a:hover {
+            color: var(--color-red-neon);
+            transform: translateX(5px);
+        }
+
+        .footer-contact p {
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0.6;
+            font-size: 0.8rem;
+        }
+
+        /* --- Mobile Responsiveness --- */
+        @media (max-width: 640px) {
+            .hero-glass {
+                padding: 2rem 1.5rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero-title {
+                font-size: clamp(2.5rem, 12vw, 5rem);
+            }
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .nav-bar-content {
+                max-width: 98%;
+                margin: 0.5rem auto;
+            }
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .footer-brand {
+                margin-bottom: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation (Replicated from Image) -->
+    <nav class="nav-glass">
+        <div class="container nav-bar-content">
+            <div class="nav-brand">
+                <!-- HAvOC white, CTF neon red -->
+                <span class="logo-text">HAvOC<span class="logo-highlight">CTF</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">Home</a>
+                <!-- <a href="dashboard.html" class="nav-link">Challenges</a>
+                <a href="scoreboard.html" class="nav-link">Scoreboard</a> -->
+                <a href="rules.html" class="nav-link">Rules</a>
+                <!-- CTA Button -->
+                <a href="register.html" class="nav-link cta-link">GET ACCESS</a>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#home" class="mobile-link">Home</a>
+        <!-- <a href="#challenges" class="mobile-link">Challenges</a>
+        <a href="#scoreboard" class="mobile-link">Scoreboard</a> -->
+        <a href="#rules" class="mobile-link">Rules</a>
+        <a href="#register" class="mobile-link cta-link">GET ACCESS</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container hero-content">
+            <div class="hero-glass glass-card">
+                <h1 class="hero-title">HAvOC CTF</h1>
+                <p class="hero-subtitle">THE ULTIMATE CYBER ARENA: HACK. LEARN. WIN.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="window.location.href='register.html'">
+                        Register Now
+                    </button>
+                    <!-- <button class="btn-primary" style="background: transparent; color: var(--color-white-text);" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-terminal"></i> View Challenges
+                    </button> -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-number neon-text">150+</div>
+                    <div class="stat-label">Active Players</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number neon-text">25</div>
+                    <div class="stat-label">Total Challenges</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number neon-text">48h</div>
+                    <div class="stat-label">Time Remaining</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Placeholder for other pages to link properly -->
+    <!-- <section id="challenges" style="min-height: 50vh; display: none;"></section>
+    <section id="scoreboard" style="min-height: 50vh; display: none;"></section> -->
+    <section id="rules" style="min-height: 50vh; display: none;"></section>
+    <section id="register" style="min-height: 50vh; display: none;"></section>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo-text">HAvOC<span class="logo-highlight">CTF</span></span>
+                    <p>The ultimate cybersecurity challenge platform, powered by Sairam Institutions.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <!-- <a href="#challenges">Challenges</a>
+                    <a href="#scoreboard">Scoreboard</a> -->
+                    <a href="#rules">Rules</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>Contact & Support</h4>
+                    <p>qtuxathon@sairamtap.edu.in</p>
+                    <p>Discord: Vanga Adipom Prands</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 HAvOC_CTF. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Mobile Menu -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navToggle = document.getElementById('navToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const navLinks = document.querySelectorAll('.nav-link, .mobile-link');
+            const navbar = document.querySelector('.nav-glass');
+            
+            // Toggle Mobile Menu
+            navToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('active');
+                navToggle.classList.toggle('open');
+            });
+            
+            // Close menu when a link is clicked (for smooth scrolling)
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.remove('active');
+                    navToggle.classList.remove('open');
+                });
+            });
+
+            // Add scroll effect to navbar (optional: make it sticky or add a shadow)
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.style.padding = '0.5rem 0';
+                } else {
+                    navbar.style.padding = '0.75rem 0';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

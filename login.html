@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAVOC CTF Login</title>
+    <!-- Load Tailwind CSS for utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Load Inter for body text and Orbitron for titles/buttons */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Orbitron:wght@400..900&display=swap');
+        
+        :root {
+            --color-red: #FF4444; /* Brighter red for stronger contrast/glow */
+            --color-black: #0A0A0A; /* Deep black */
+            --color-white: #F0F0F0; /* Off-white */
+            --color-dark-card: rgba(10, 10, 10, 0.5); /* Increased transparency */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-black);
+            /* Center content perfectly */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        /* Full-screen particle background canvas */
+        #bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Glassmorphism/Liquid Glass Card */
+        .auth-card {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 400px;
+            padding: 2.5rem;
+            border-radius: 16px; 
+            background: var(--color-dark-card); 
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Form Styling */
+        .auth-form label {
+            display: block;
+            color: var(--color-white);
+            margin-top: 1rem;
+            margin-bottom: 0.4rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .auth-form input[type="text"],
+        .auth-form input[type="email"],
+        .auth-form input[type="password"] {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.03); 
+            color: var(--color-white);
+            outline: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .auth-form input:focus {
+            border-color: var(--color-red);
+            box-shadow: 0 0 0 4px rgba(255, 68, 68, 0.3);
+        }
+
+        /* Primary Red Button - Blocky Style */
+        .auth-btn {
+            width: 100%;
+            margin-top: 2rem;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 4px; 
+            background-color: var(--color-red);
+            color: var(--color-black);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .auth-btn:hover {
+            background-color: #CC3333; 
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 1);
+        }
+
+        /* Link and Text Styles */
+        .auth-title {
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 2.5rem; 
+            font-weight: 900;
+            color: var(--color-red);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--color-red), 0 0 10px rgba(255, 68, 68, 0.8);
+        }
+
+        .auth-subtitle {
+            font-size: 1rem;
+            color: var(--color-white);
+            text-align: center;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .auth-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--color-white);
+            font-size: 0.9rem;
+            text-decoration: none;
+            opacity: 0.7;
+            transition: color 0.2s;
+        }
+
+        .auth-link:hover {
+            color: var(--color-red);
+            opacity: 1;
+        }
+        
+        /* Message Box Styling */
+        #messageBox {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            color: var(--color-white);
+            transition: all 0.3s ease;
+        }
+        .message-success {
+            background-color: rgba(68, 255, 68, 0.1);
+            border: 1px solid rgba(68, 255, 68, 0.3);
+            color: #44FF44;
+        }
+        .message-error {
+            background-color: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: var(--color-red);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .auth-card {
+                padding: 2rem 1.5rem;
+            }
+            .auth-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-particles"></canvas>
+    
+    <div class="auth-card">
+        <div class="auth-title">LOGIN</div>
+        <div class="auth-subtitle">ACCESS CTF TERMINAL</div>
+        
+        <!-- Message box for displaying success/error -->
+        <div id="messageBox" class="hidden"></div>
+
+        <form class="auth-form" id="loginForm">
+            <!-- NOTE: Firebase Auth uses Email, not Username -->
+            <label for="email">EMAIL:</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
+
+            <label for="password">PASSWORD:</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password">
+
+            <button class="auth-btn" type="submit">HACK IN & LOGIN</button>
+        </form>
+        <!-- Link to registration.html -->
+        <a class="auth-link" href="register.html">Don't have an account? Register here.</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CUSTOM Firebase Configuration (Synchronized) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
+            authDomain: "havoc-985d0.firebaseapp.com",
+            databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
+            projectId: "havoc-985d0",
+            storageBucket: "havoc-985d0.firebasestorage.app",
+            messagingSenderId: "8269389875",
+            appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
+            measurementId: "G-Y6FXWB2RWY"
+        };
+        
+        // We use the projectId as the appId for Firestore pathing
+        const appId = firebaseConfig.projectId; 
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Function to display messages
+        function showMessage(type, message) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.classList.remove('hidden', 'message-success', 'message-error');
+            messageBox.classList.add(type === 'success' ? 'message-success' : 'message-error');
+            messageBox.innerHTML = message;
+        }
+        
+        // --- Form Submission Logic (Firebase Login) ---
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitButton = e.submitter;
+
+            // Disable button and show loading state
+            submitButton.textContent = 'AUTHENTICATING...';
+            submitButton.disabled = true;
+            document.getElementById('messageBox').classList.add('hidden');
+
+            try {
+                // 1. Sign in with Email and Password
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                
+                // 2. Successful Login: Redirect to the new page
+                window.location.href = 'afterlogin.html';
+                
+            } catch (error) {
+                console.error("Login failed:", error.code, error.message);
+                let errorMessage = "Login failed. Check your email and password.";
+                
+                if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Invalid email format.";
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = "Invalid credentials. Please try again.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Access blocked due to too many failed attempts.";
+                }
+
+                showMessage('error', `ERROR: ${errorMessage}`);
+            } finally {
+                submitButton.textContent = 'HACK IN & LOGIN';
+                submitButton.disabled = false;
+            }
+        });
+
+        // --- Canvas Particle Background Logic (Plexus Effect) ---
+        const canvas = document.getElementById('bg-particles');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const numParticles = 150; 
+        const particles = [];
+        const maxDist = 130;
+        const trailOpacity = 0.08;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.radius = 1 + Math.random();
+                
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                
+                this.isRed = Math.random() < 0.15;
+                this.color = this.isRed ? 'var(--color-red)' : 'var(--color-white)';
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.x = (this.x < 0) ? width : 0;
+                if (this.y < 0 || this.y > height) this.y = (this.y < 0) ? height : 0;
+            }
+        }
+
+        for (let i = 0; i < numParticles; i++) {
+            particles.push(new Particle());
+        }
+
+        function drawLines() {
+            for (let i = 0; i < numParticles; i++) {
+                for (let j = i + 1; j < numParticles; j++) {
+                    const p1 = particles[i];
+                    const p2 = particles[j];
+                    
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDist) {
+                        const alpha = 1 - (dist / maxDist);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.25})`; 
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 10, ' + trailOpacity + ')';
+            ctx.fillRect(0, 0, width, height); 
+            
+            drawLines();
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function () {
+            animate();
+        }
+    </script>
+</body>
+</html>

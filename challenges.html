@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Arena - Challenges</title>
+    <!-- Load Tailwind CSS for utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Embed styles.css content here */
+        /* HAVOC ACCESS NAV LINK */
+        .havoc-access {
+            color: #ff2b2b !important;
+            font-weight: 900 !important;
+            font-family: 'Orbitron', monospace !important;
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 8px #ff2b2b88;
+        }
+        /* CTF Arena Design System - Liquid Glass Morphism */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+        /* CSS Variables */
+        :root {
+            /* Core Colors - CTF Theme */
+            --background: #0b0b0b;
+            --foreground: #ffffff;
+            
+            /* Neon Red Palette */
+            --neon-red: #ff2b2b;
+            --neon-red-glow: #ff2b2b;
+            --neon-red-subtle: #ff2b2b;
+            
+            /* Glass System */
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-bg-dark: rgba(0, 0, 0, 0.3);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
+            --glass-red: rgba(255, 43, 43, 0.1); /* Added for consistency */
+            
+            /* Animations */
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            
+            /* Shadows */
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --shadow-neon: 0 0 20px rgba(255, 43, 43, 0.5);
+            --shadow-lift: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+            
+            /* Layout */
+            --radius: 1rem;
+        }
+
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* Added background gradient for style */
+            background-image: radial-gradient(circle at 20% 30%, rgba(255, 43, 43, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(255, 43, 43, 0.05) 0%, transparent 50%);
+            padding-top: 6rem; /* Space for fixed nav */
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        section {
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        /* Typography */
+        .heading-condensed {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 0.9;
+        }
+
+        .code-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .neon-text {
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+        }
+
+        /* Glass Effects */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-glass);
+            border-radius: var(--radius);
+        }
+
+        .glass-dark {
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow-glass);
+            border-radius: var(--radius);
+        }
+
+        .glass-red {
+            background: rgba(255, 43, 43, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 43, 43, 0.3);
+            box-shadow: var(--shadow-glass), var(--shadow-neon);
+            border-radius: var(--radius);
+        }
+
+        /* Hover Effects */
+        .hover-lift {
+            transition: var(--transition-smooth);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lift);
+        }
+
+        .hover-glass:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 43, 43, 0.4);
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(255, 43, 43, 0.5),
+                        0 0 20px rgba(255, 43, 43, 0.3),
+                        0 0 30px rgba(255, 43, 43, 0.2);
+        }
+
+        /* Navigation */
+        .nav-glass {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+        }
+
+        .nav-glass .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand .logo {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--foreground);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+            position: relative;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--neon-red);
+            text-shadow: 0 0 5px rgba(255, 43, 43, 0.8);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--neon-red);
+            box-shadow: 0 0 5px rgba(255, 43, 43, 0.8);
+        }
+
+        /* Mobile Navigation */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 3px;
+        }
+
+        .nav-toggle span {
+            width: 25px;
+            height: 2px;
+            background: var(--foreground);
+            transition: var(--transition-smooth);
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 80px;
+            left: -100%;
+            width: 100%;
+            height: calc(100vh - 80px);
+            padding: 2rem;
+            transition: var(--transition-smooth);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+             background: var(--glass-bg-dark); /* Ensure mobile menu is dark glass */
+        }
+
+        .mobile-menu.active {
+            left: 0;
+        }
+
+        .mobile-link {
+            color: var(--foreground);
+            text-decoration: none;
+            padding: 1rem;
+            border-radius: var(--radius);
+            transition: var(--transition-smooth);
+        }
+
+        .mobile-link:hover {
+            background: var(--glass-red);
+            color: var(--neon-red);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .nav-toggle {
+                display: flex;
+            }
+        }
+        
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 2rem; /* Reduced padding as fixed nav is present */
+        }
+
+        .section-header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 1rem;
+            padding-top: 3rem; /* Add extra padding to clear fixed nav */
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Challenge Filters */
+        .filters-container {
+            margin-bottom: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--foreground);
+            padding: 0.5rem;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            background: none;
+            border: none;
+            color: var(--neon-red);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .filter-tabs,
+        .difficulty-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-tab,
+        .difficulty-filter {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--foreground);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .filter-tab.active,
+        .difficulty-filter.active,
+        .filter-tab:hover,
+        .difficulty-filter:hover {
+            background: var(--glass-red);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        /* Challenges Grid */
+        .challenges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .challenge-card {
+            padding: 1.5rem;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+
+        .challenge-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--neon-red);
+            background: rgba(255, 43, 43, 0.05);
+        }
+
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .challenge-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--neon-red);
+        }
+
+        .challenge-points {
+            background: var(--glass-red);
+            color: var(--neon-red);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .challenge-tags {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .challenge-tag {
+            background: var(--glass-bg-dark);
+            color: var(--foreground);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .challenge-tag.crypto { border-left: 3px solid #ffd700; }
+        .challenge-tag.pwn { border-left: 3px solid #ff4757; }
+        .challenge-tag.web { border-left: 3px solid #00d2d3; }
+        .challenge-tag.reverse { border-left: 3px solid #ff9ff3; }
+        .challenge-tag.forensics { border-left: 3px solid #54a0ff; }
+
+        .challenge-description {
+            margin-bottom: 1rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .challenge-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .challenge-difficulty {
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .challenge-difficulty.easy {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .challenge-difficulty.medium {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .challenge-difficulty.hard {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .challenge-open-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--foreground);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .challenge-open-btn:hover {
+            background: var(--glass-red);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            box-shadow: var(--shadow-neon);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: 2rem;
+            transform: scale(0.8);
+            transition: var(--transition-smooth);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--foreground);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-close:hover {
+            background: var(--glass-red);
+            color: var(--neon-red);
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+        }
+
+        .modal-tags {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-description {
+            background: var(--glass-bg-dark);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .submission-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .flag-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--foreground);
+            outline: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .flag-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .submit-btn {
+            background: var(--glass-red);
+            border: 2px solid var(--neon-red);
+            color: var(--foreground);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .submit-btn:hover {
+            background: var(--neon-red);
+            color: var(--background);
+            box-shadow: var(--shadow-neon);
+        }
+
+        .hints-section {
+            margin-top: 1.5rem;
+        }
+
+        .hints-toggle {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--foreground);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .hints-toggle:hover {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .hints-content {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--glass-bg-dark);
+            border-radius: var(--radius);
+        }
+
+        /* Scoreboard (Not used in challenges, but kept for comprehensive CSS) */
+        .scoreboard-section {
+            padding: 2rem 0;
+            min-height: 100vh;
+        }
+
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            padding: 0.5rem;
+            border-radius: var(--radius);
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--foreground);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .toggle-btn.active,
+        .toggle-btn:hover {
+            background: var(--glass-red);
+            color: var(--neon-red);
+            box-shadow: var(--shadow-neon);
+        }
+
+        .leaderboard-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .leaderboard {
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .leaderboard-header {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 120px;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .leaderboard-entry {
+            padding: 1rem 2rem;
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 120px;
+            gap: 1rem;
+            align-items: center;
+            transition: var(--transition-smooth);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-entry:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .leaderboard-entry:hover {
+            background: rgba(255, 43, 43, 0.05);
+        }
+
+        .leaderboard-entry.top-3 {
+            background: var(--glass-red);
+            border-color: var(--neon-red);
+        }
+
+        .rank-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .rank-icon {
+            font-size: 1.5rem;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .team-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        .team-name.top-3 {
+            color: var(--neon-red);
+        }
+
+        .team-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+
+        .solved-count {
+            text-align: center;
+        }
+
+        .solved-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .solved-label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        .score-display {
+            text-align: right;
+        }
+
+        .score-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .score-number.top-score {
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        /* Rules Page (Not used in challenges, but kept for comprehensive CSS) */
+        .rules-section {
+            padding: 2rem 0;
+            min-height: 100vh;
+        }
+        
+        /* --- FOOTER STYLES (MATCHING DASHBOARD) --- */
+        .footer {
+            margin-top: 4rem;
+            padding: 3rem 0 1rem;
+            /* Applying dark glass background */
+            background: var(--glass-bg-dark); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-brand .logo {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px rgba(255, 43, 43, 0.8);
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .footer-brand p {
+            opacity: 0.7;
+            line-height: 1.6;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .footer-links h4,
+        .footer-contact h4 {
+            color: var(--neon-red);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--foreground);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: var(--transition-smooth);
+            opacity: 0.8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .footer-links a:hover {
+            color: var(--neon-red);
+            opacity: 1;
+            transform: translateX(5px);
+        }
+
+        .footer-contact p {
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.6;
+            font-size: 0.8rem;
+        }
+        /* End Footer Styles */
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .hero-glass {
+                padding: 2rem 1.5rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .challenges-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-container {
+                padding: 0 1rem;
+            }
+            
+            .filter-tabs,
+            .difficulty-filters {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+            
+            .leaderboard-header,
+            .leaderboard-entry {
+                grid-template-columns: 60px 1fr 80px 100px;
+                padding: 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .modal {
+                margin: 1rem;
+                width: calc(100% - 2rem);
+            }
+            
+            .submission-section {
+                flex-direction: column;
+            }
+            
+            .flag-input {
+                min-width: auto;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-header {
+                padding-top: 4rem;
+            }
+            
+            .section-header h1 {
+                font-size: 2rem;
+            }
+            
+            .leaderboard-header,
+            .leaderboard-entry {
+                grid-template-columns: 50px 1fr 60px 80px;
+                gap: 0.5rem;
+                padding: 0.75rem;
+            }
+            
+            .team-info {
+                gap: 0.5rem;
+            }
+            
+            .team-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
+            
+            .toast {
+                min-width: auto;
+                width: calc(100vw - 40px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-glass">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">HAvOC<span class="neon-text">CTF</span></span>
+            </div>
+            <div class="nav-links">
+                <!-- <a href="index copy.html" class="nav-link">Home</a> -->
+                <a href="afterlogin.html" class="nav-link">Dashboard</a>
+                <a href="challenges.html" class="nav-link active">Challenges</a>
+                <a href="scoreboard.html" class="nav-link">Scoreboard</a>
+                <a href="rules.html" class="nav-link">Rules</a>
+                <!-- <button id="signOutBtnNav" type="button" class="flex items-center gap-1">
+                    <i class="fas fa-sign-out-alt"></i> LOGOUT
+                </button> -->
+                <!-- We assume login state is handled on the actual Dashboard/Index pages -->
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu glass-dark" id="mobileMenu">
+        <!-- <a href="index.html" class="mobile-link">Home</a> -->
+        <a href="afterlogin.html" class="mobile-link">Dashboard</a>
+        <a href="challenges.html" class="mobile-link">Challenges</a>
+        <a href="scoreboard.html" class="mobile-link">Scoreboard</a>
+        <a href="rules.html" class="mobile-link">Rules</a>
+    </div>
+
+    <!-- Challenges Section -->
+    <section class="challenges-section">
+        <div class="container" id="challengeStructureTemplate" style="display: none;">
+            <div class="section-header">
+                <h1 class="heading-condensed neon-text">CHALLENGES</h1>
+                <p class="section-subtitle">Test your skills across multiple categories</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-container">
+                <div class="search-bar glass">
+                    <input type="text" id="searchInput" placeholder="Search challenges..." class="search-input">
+                    <button class="search-btn">🔍</button>
+                </div>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-category="all">All</button>
+                    <button class="filter-tab" data-category="crypto">Crypto</button>
+                    <button class="filter-tab" data-category="pwn">Pwn</button>
+                    <button class="filter-tab" data-category="web">Web</button>
+                    <button class="filter-tab" data-category="reverse">Reverse</button>
+                    <button class="filter-tab" data-category="forensics">Forensics</button>
+                </div>
+
+                <div class="difficulty-filters">
+                    <button class="difficulty-filter active" data-difficulty="all">All Levels</button>
+                    <button class="difficulty-filter" data-difficulty="easy">Easy</button>
+                    <button class="difficulty-filter" data-difficulty="medium">Medium</button>
+                    <button class="difficulty-filter" data-difficulty="hard">Hard</button>
+                </div>
+            </div>
+
+            <!-- Challenges Grid -->
+            <div class="challenges-grid" id="challengesGrid">
+                <!-- Challenge cards will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Challenge Modal -->
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2 id="modalTitle" class="code-mono"></h2>
+                <!-- FIX: Removed inline onclick -->
+                <button class="modal-close" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="modal-tags" id="modalTags"></div>
+                <div class="modal-description" id="modalDescription"></div>
+                <!-- ADDED: File download link container -->
+                <div class="modal-files" id="modalFiles"></div> 
+                <div class="submission-section">
+                    <input type="text" id="flagInput" placeholder="flag{...}" class="flag-input glass">
+                    <!-- FIX: Removed inline onclick -->
+                    <button class="submit-btn neon-glow" id="submitFlagBtn">Submit Flag</button>
+                </div>
+                <div class="hints-section">
+                    <!-- FIX: Removed inline onclick -->
+                    <button class="hints-toggle" id="hintsToggleBtn">💡 Show Hints</button>
+                    <div class="hints-content" id="hintsContent" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer class="footer glass-dark">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo">CTF<span class="neon-text"> Arena</span></span> <!-- Adjusted branding for look -->
+                    <p>The ultimate cybersecurity challenge platform</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <!-- <a href="index.html">Home</a> -->
+                    <a href="afterlogin.html">Dashboard</a>
+                    <a href="scoreboard.html">Scoreboard</a>
+                    <a href="rules.html">Rules</a>
+                </div>
+                <div class="footer-contact">
+                    <h4>Contact</h4>
+                    <p>admin@ctfarena.com</p>
+                    <p>Discord: CTFArena</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 CTF Arena. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Consolidated JavaScript Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            updateDoc, 
+            arrayUnion, 
+            increment,
+            onSnapshot,
+            collection,
+            query,
+            where,
+            getDocs 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION (Must be set for database interaction) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
+            authDomain: "havoc-985d0.firebaseapp.com",
+            databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
+            projectId: "havoc-985d0",
+            storageBucket: "havoc-985d0.firebasestorage.app",
+            messagingSenderId: "8269389875",
+            appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
+            measurementId: "G-Y6FXWB2RWY"
+        };
+        const APP_ID = firebaseConfig.projectId; 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- GLOBAL STATE ---
+        let currentUserId = null;
+        let userTeamId = null;
+        let userTeamData = null;
+        let unsubscribeTeamListener = null;
+        let currentChallenge = null; 
+
+        // --- MOCK CHALLENGE DATA (with correct points assigned) ---
+        const CHALLENGES = [
+            { id: 'crypto-vault-1', title: "Crypto Vault 1", points: 100, category: "crypto", difficulty: "easy", description: "Find the hidden key by reversing a simple substitution cipher.", flag: "flag{easy_cipher}", tags: ["beginner", "cipher"], hints: ["Look up Caesar cipher.", "The key is 3."], solved: false },
+            { id: 'web-xss-basic', title: "Web XSS Basic", points: 150, category: "web", difficulty: "easy", description: "A simple XSS injection point. Deliver a payload to steal the admin's cookie.", flag: "flag{xss_got_ya}", tags: ["injection", "frontend"], hints: ["Try basic script tags.", "Check for filtering on angle brackets."], solved: false },
+            { id: 'binary-overflow', title: "Binary Overflow", points: 300, category: "pwn", difficulty: "medium", description: "A classic buffer overflow challenge on a small C binary running on a remote server.", flag: "flag{b0f_r0ck5}", tags: ["c", "exploit", "stack"], hints: ["Look for `gets()`.", "The buffer size is 128 bytes."], solved: false },
+            { id: 'forensics-image-1', title: "Forensics Image 1", points: 200, category: "forensics", difficulty: "medium", description: "Analyze the provided disk image to find the deleted log file containing the flag.", flag: "flag{file_carving}", tags: ["disk", "steganography"], hints: ["Use `strings` or `foremost`.", "Check deleted files in the recycling bin mockup."], solved: false },
+            { id: 'reverse-eng-101', title: "Reverse Engineering 101", points: 100, category: "reverse", difficulty: "easy", description: "Decompile the provided Python bytecode file (.pyc) to find the hardcoded flag string inside the function.", flag: "flag{py_magic}", tags: ["python", "decompiling"], hints: ["Use `uncompyle6`.", "The function name is `check_flag`."], solved: false },
+            { id: 'hardest-hash', title: "Hardest Hash", points: 500, category: "crypto", difficulty: "hard", description: "Crack a custom iterated hash function implemented in a Go binary. This requires significant computation or finding the flaw.", flag: "flag{sha_too_slow}", tags: ["math", "custom_alg"], hints: ["The custom hash has a flaw in the initialization vector.", "Focus on timing attacks."], solved: false },
+            { 
+                id: 'pdf-metadata-hunt', 
+                title: "PDF Metadata Hunt", 
+                points: 50, 
+                category: "forensics", 
+                difficulty: "easy", 
+                description: "The flag is hidden in the metadata of the provided PDF document. Download the file and use a tool like ExifTool to find it!", 
+                flag: "flag{pdf_1s_n0t_s3cur3}", 
+                tags: ["metadata", "osint"], 
+                hints: ["The flag is in the Author field.", "The file is named 'ChallengeDoc.pdf'."], 
+                solved: false,
+                files: [
+                    { name: "ChallengeDoc.pdf", url: "https://placehold.co/600x400/000/fff/pdf?text=Download+Challenge+PDF" }
+                ]
+            }
+        ];
+
+        let currentFilters = {
+            category: 'all',
+            difficulty: 'all',
+            search: ''
+        };
+
+        // --- UTILITY FUNCTIONS ---
+        const toastContainer = document.getElementById('toastContainer');
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="font-bold">${type.toUpperCase()}:</span> ${message}`;
+            
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+        
+        /** Closes the challenge modal. */
+        function closeModal() {
+            const challengeModal = document.getElementById('challengeModal');
+            const hintsContent = document.getElementById('hintsContent');
+            const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+
+            challengeModal.classList.remove('active');
+            currentChallenge = null;
+            document.getElementById('flagInput').value = '';
+            
+            // Reset hints
+            hintsContent.style.display = 'none';
+            hintsToggleBtn.innerHTML = '💡 Show Hints';
+        }
+
+        /** Toggles the visibility of challenge hints. */
+        function toggleHints() {
+            const hintsContent = document.getElementById('hintsContent');
+            const toggleBtn = document.getElementById('hintsToggleBtn');
+            const isHidden = hintsContent.style.display === 'none';
+            hintsContent.style.display = isHidden ? 'block' : 'none';
+            toggleBtn.innerHTML = isHidden ? '💡 Hide Hints' : '💡 Show Hints';
+        }
+
+        /** Opens the challenge modal and populates content. */
+        function openModal(challengeId) {
+            const challengeModal = document.getElementById('challengeModal');
+            // This line ensures currentChallenge is set for use by submitFlag
+            currentChallenge = CHALLENGES.find(c => c.id === challengeId); 
+            if (!currentChallenge) {
+                showToast('error', 'Challenge data not found.');
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = currentChallenge.title;
+            document.getElementById('modalDescription').textContent = currentChallenge.description;
+            
+            // Files/Download Link Rendering
+            const modalFiles = document.getElementById('modalFiles');
+            modalFiles.innerHTML = '';
+            if (currentChallenge.files && currentChallenge.files.length > 0) {
+                currentChallenge.files.forEach(file => {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = file.url;
+                    fileLink.download = file.name;
+                    fileLink.className = "flex items-center gap-2 text-sm neon-text hover:underline mt-2";
+                    fileLink.innerHTML = `<i class="fas fa-download"></i> Download: ${file.name}`;
+                    modalFiles.appendChild(fileLink);
+                });
+            } else {
+                modalFiles.innerHTML = '<p class="text-sm opacity-75 mt-2">No files provided for this challenge.</p>';
+            }
+            
+            // Tags
+            const modalTags = document.getElementById('modalTags');
+            modalTags.innerHTML = '';
+            
+            const categoryTag = document.createElement('span');
+            categoryTag.className = `challenge-tag ${currentChallenge.category}`;
+            categoryTag.textContent = currentChallenge.category.toUpperCase();
+            modalTags.appendChild(categoryTag);
+
+            currentChallenge.tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'challenge-tag';
+                span.textContent = tag.toUpperCase();
+                modalTags.appendChild(span);
+            });
+
+            // Submission button state
+            const submitBtn = document.getElementById('submitFlagBtn');
+            const flagInput = document.getElementById('flagInput');
+            
+            if (currentChallenge.solved) {
+                flagInput.placeholder = "Already Solved!";
+                flagInput.disabled = true;
+                submitBtn.textContent = "SOLVED";
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('neon-glow');
+            } else {
+                flagInput.placeholder = "flag{...}";
+                flagInput.disabled = false;
+                submitBtn.textContent = "Submit Flag";
+                submitBtn.disabled = false;
+                submitBtn.classList.add('neon-glow');
+            }
+
+            challengeModal.classList.add('active');
+        }
+
+        /** Checks the solved status and re-renders the challenges based on the current team's data. */
+        function updateChallengeStatus(teamData) {
+            userTeamData = teamData;
+            
+            CHALLENGES.forEach(challenge => {
+                // Check if the teamData exists AND if the challenge ID is present in the solvedChallenges map
+                const isSolved = teamData && teamData.solvedChallenges && teamData.solvedChallenges[challenge.id];
+                challenge.solved = !!isSolved;
+            });
+            renderChallenges();
+        }
+
+        /** Fetches the current team data only ONCE when needed for submission/page load */
+        async function fetchTeamData(userId) {
+             try {
+                // 1. Try to find the team where the user is the leader (using UID as Doc ID)
+                let teamDocRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userId);
+                let docSnap = await getDoc(teamDocRef);
+                
+                if (docSnap.exists()) {
+                    userTeamId = docSnap.id;
+                    userTeamData = docSnap.data();
+                    return userTeamData;
+                }
+                
+                // 2. If not the leader/doc doesn't exist, search the members array (for regular members)
+                // This requires fetching the user's display name and email for the array-contains query.
+                const userProfileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
+                const profileSnap = await getDoc(userProfileRef);
+                
+                // Get user identity details (MUST match how they are stored in the teams 'members' array)
+                const userName = profileSnap.exists() ? profileSnap.data().username.toLowerCase() : auth.currentUser.email.split('@')[0].toLowerCase();
+                const userEmail = auth.currentUser.email.toLowerCase();
+
+                const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
+                // Use the complex object matching query for array-contains
+                const q = query(teamsRef, where("members", "array-contains", { uid: userId, name: userName, email: userEmail })); 
+                const teamsSnapshot = await getDocs(q);
+
+                if (!teamsSnapshot.empty) {
+                     teamDocRef = teamsSnapshot.docs[0];
+                     userTeamId = teamDocRef.id; // CRITICAL: Set userTeamId here for member teams
+                     userTeamData = teamDocRef.data();
+                     return userTeamData;
+                }
+                
+                userTeamId = null;
+                userTeamData = null;
+                return null;
+
+             } catch (error) {
+                console.error("Error fetching team status:", error);
+                return null;
+             }
+        }
+
+
+        // --- FLAG SUBMISSION LOGIC (Real-time update) ---
+        async function submitFlag() {
+            if (!currentChallenge) {
+                 showToast('error', 'Error: Challenge data is missing.'); // FIX: Graceful error handling
+                 return;
+            }
+
+            const flagInput = document.getElementById('flagInput');
+            const submittedFlag = flagInput.value.trim();
+            const submitBtn = document.getElementById('submitFlagBtn');
+
+            if (!currentUserId) {
+                showToast('error', 'You must be logged in to submit a flag.');
+                return;
+            }
+            
+            if (!userTeamId) {
+                showToast('error', 'You must join a team before submitting flags.');
+                return;
+            }
+
+            if (!submittedFlag) {
+                showToast('error', 'Please enter a flag.');
+                return;
+            }
+            
+            if (currentChallenge.solved) {
+                showToast('error', 'This challenge has already been solved by your team.');
+                return;
+            }
+
+            submitBtn.textContent = 'Verifying...';
+            submitBtn.disabled = true;
+
+            // --- SIMULATE SERVER CHECK against mock flag ---
+            if (submittedFlag !== currentChallenge.flag) {
+                setTimeout(() => {
+                    showToast('error', 'Incorrect flag. Try again.');
+                    submitBtn.textContent = 'Submit Flag';
+                    submitBtn.disabled = false;
+                }, 1000);
+                return;
+            }
+
+            // --- CORRECT FLAG: Apply score and solved status to Firebase ---
+            try {
+                const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userTeamId);
+                const challengeId = currentChallenge.id;
+                const challengePoints = currentChallenge.points;
+                
+                // Use team data field update to record solution and update score atomically
+                await updateDoc(teamRef, {
+                    score: increment(challengePoints),
+                    // Use dynamic map key to save solved challenge (e.g., solvedChallenges.crypto-vault-1: true)
+                    [`solvedChallenges.${challengeId}`]: true 
+                });
+                
+                // Show success and update local state (which should be triggered by listener, but we force it)
+                currentChallenge.solved = true;
+                updateChallengeStatus({ ...userTeamData, score: (userTeamData?.score || 0) + challengePoints, solvedChallenges: { ...userTeamData?.solvedChallenges, [challengeId]: true } });
+                closeModal();
+                showToast('success', `FLAG ACCEPTED! +${challengePoints} points for your team!`);
+
+            } catch (error) {
+                console.error("Firebase update failed:", error);
+                showToast('error', 'Failed to update score. Check permissions.');
+            } finally {
+                 submitBtn.textContent = 'Submit Flag';
+                 submitBtn.disabled = false;
+            }
+        }
+
+        // --- Challenge Rendering ---
+        function createChallengeCard(challenge) {
+            const card = document.createElement('div');
+            // Check if solved based on the dynamic state
+            const solvedClass = challenge.solved ? 'opacity-50' : '';
+            card.className = `challenge-card glass hover-lift ${solvedClass}`;
+            card.setAttribute('data-id', challenge.id);
+            card.setAttribute('data-category', challenge.category);
+            card.setAttribute('data-difficulty', challenge.difficulty);
+            
+            // FIX: Use addEventListener instead of onclick assignment
+            card.addEventListener('click', () => openModal(challenge.id)); 
+            
+            const solvedIndicator = challenge.solved ? 
+                `<span class="challenge-points" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">SOLVED</span>` : 
+                `<span class="challenge-points">${challenge.points} pts</span>`;
+
+            const difficultyClass = challenge.difficulty;
+
+            card.innerHTML = `
+                <div class="challenge-header">
+                    <h3 class="challenge-title">${challenge.title}</h3>
+                    ${solvedIndicator}
+                </div>
+                <div class="challenge-tags">
+                    <span class="challenge-tag ${challenge.category}">${challenge.category.toUpperCase()}</span>
+                    ${challenge.tags.map(tag => `<span class="challenge-tag">${tag.toUpperCase()}</span>`).join('')}
+                </div>
+                <div class="challenge-description">
+                    ${challenge.description.substring(0, 80)}...
+                </div>
+                <div class="challenge-footer">
+                    <span class="challenge-difficulty ${difficultyClass}">${difficultyClass.toUpperCase()}</span>
+                    <button class="challenge-open-btn">View Challenge</button>
+                </div>
+            `;
+            return card;
+        }
+
+        function renderChallenges() {
+            const challengesGrid = document.getElementById('challengesGrid');
+            challengesGrid.innerHTML = '';
+            const filteredChallenges = CHALLENGES.filter(c => {
+                const categoryMatch = currentFilters.category === 'all' || c.category === currentFilters.category;
+                const difficultyMatch = currentFilters.difficulty === 'all' || c.difficulty === currentFilters.difficulty;
+                const searchMatch = !currentFilters.search || 
+                                     c.title.toLowerCase().includes(currentFilters.search) ||
+                                     c.description.toLowerCase().includes(currentFilters.search);
+                
+                return categoryMatch && difficultyMatch && searchMatch;
+            }).sort((a, b) => a.points - b.points); // Sort by points ascending
+
+            if (filteredChallenges.length === 0) {
+                challengesGrid.innerHTML = '<p class="text-center neon-text opacity-75 py-10 text-xl heading-condensed">No challenges match your filters.</p>';
+            } else {
+                filteredChallenges.forEach(c => challengesGrid.appendChild(createChallengeCard(c)));
+            }
+        }
+
+
+        // --- Event Listeners and Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get DOM elements for binding
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+            const submitFlagBtn = document.getElementById('submitFlagBtn');
+
+            // --- Modal/Form Event Binding (FIX for ReferenceError) ---
+            modalCloseBtn.addEventListener('click', closeModal);
+            hintsToggleBtn.addEventListener('click', toggleHints);
+            submitFlagBtn.addEventListener('click', submitFlag);
+
+            // Initial render
+            // NOTE: Initial render MUST happen before filters are bound, but data will be wrong.
+            renderChallenges(); 
+
+            // Filters and Search
+            document.querySelectorAll('.filter-tabs button').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-tabs button').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilters.category = e.target.dataset.category;
+                    renderChallenges();
+                });
+            });
+
+            document.querySelectorAll('.difficulty-filters button').forEach(filter => {
+                filter.addEventListener('click', (e) => {
+                    document.querySelectorAll('.difficulty-filters button').forEach(f => f.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilters.difficulty = e.target.dataset.difficulty;
+                    renderChallenges();
+                });
+            });
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                currentFilters.search = e.target.value.toLowerCase().trim();
+                renderChallenges();
+            });
+
+            // Mobile Menu Toggle Logic
+            const navToggle = document.getElementById('navToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            navToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('active');
+            });
+            
+            // Close menu/modal on link click
+            document.querySelectorAll('.mobile-link, .nav-link').forEach(link => {
+                link.addEventListener('click', () => mobileMenu.classList.remove('active'));
+            });
+
+            // Modal Close by Overlay Click
+            const challengeModal = document.getElementById('challengeModal');
+            challengeModal.addEventListener('click', (e) => {
+                if (e.target === challengeModal) {
+                    closeModal();
+                }
+            });
+            
+            // --- AUTHENTICATION CHECK AND TEAM LISTENER ---
+            onAuthStateChanged(auth, async (user) => {
+                // Get the DOM element for showing the loading state
+                const challengeSection = document.querySelector('.challenges-section');
+                const loadingMessageHtml = `<div id="loadingOverlay" class="flex flex-col items-center justify-center p-20 text-xl text-white/50"><i class="fas fa-spinner fa-spin text-4xl mb-4 neon-text"></i> Authenticating team status...</div>`;
+                
+                // Get the hidden content template
+                const challengeStructureTemplate = document.getElementById('challengeStructureTemplate');
+
+                // FIX 1: Restore the original structure before manipulating the DOM elements inside it
+                challengeSection.innerHTML = challengeStructureTemplate.innerHTML;
+                
+                // If the user is logged out, show the final message and exit
+                if (!user) {
+                    challengeSection.innerHTML = `<div class="p-20 text-center neon-text">Please log in to view and submit challenges.</div>`;
+                    // Ensure global state is clear
+                    userTeamId = null;
+                    userTeamData = null;
+                    updateChallengeStatus(null); 
+                    return;
+                }
+                
+                // If logged in, proceed with loading
+                currentUserId = user.uid;
+                
+                // FIX 2: We must re-bind event listeners for filters/search after re-injecting the DOM
+                // This ensures filtering works correctly on the restored structure. (Simplified re-binding)
+                
+                // Fetch team data using the combined leader/member logic
+                const initialTeamData = await fetchTeamData(user.uid); 
+                
+                // Update the state and render the challenges based on the fetched data
+                updateChallengeStatus(initialTeamData);
+                
+                // --- Re-bind filter and search handlers manually after content injection ---
+                const searchInput = document.getElementById('searchInput');
+                const filterTabs = document.querySelectorAll('.filter-tabs button');
+                const difficultyFilters = document.querySelectorAll('.difficulty-filters button');
+                
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        currentFilters.search = e.target.value.toLowerCase().trim();
+                        renderChallenges();
+                    });
+                }
+
+                filterTabs.forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                         document.querySelectorAll('.filter-tabs button').forEach(t => t.classList.remove('active'));
+                         e.target.classList.add('active');
+                         currentFilters.category = e.target.dataset.category;
+                         renderChallenges();
+                    });
+                });
+
+                difficultyFilters.forEach(filter => {
+                    filter.addEventListener('click', (e) => {
+                        document.querySelectorAll('.difficulty-filters button').forEach(f => f.classList.remove('active'));
+                        e.target.classList.add('active');
+                        currentFilters.difficulty = e.target.dataset.difficulty;
+                        renderChallenges();
+                    });
+                });
+                // --- End manual re-binding ---
+            });
+        });
+    </script>
+</body>
+</html>
