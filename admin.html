@@ -105,6 +105,31 @@
         .list-item:hover {
             background: rgba(255, 43, 43, 0.05);
         }
+        .challenge-input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--foreground);
+            resize: vertical;
+            font-family: var(--font-body);
+        }
+        .challenge-list-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .challenge-list-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center;
+        }
 
         /* Loading Spinner */
         .loading-spinner {
@@ -133,7 +158,7 @@
             <div class="glass-card flex justify-start mb-6 p-2">
                 <button class="tab-btn active" data-tab="teams">Team Management</button>
                 <button class="tab-btn" data-tab="users">User Management</button>
-                <button class="tab-btn" data-tab="challenges">Challenges (Mock)</button>
+                <button class="tab-btn" data-tab="challenges">Challenges</button>
                 <button class="tab-btn" data-tab="site">Site Settings (Mock)</button>
             </div>
 
@@ -162,27 +187,52 @@
                 <div id="users" class="tab-pane hidden">
                     <h2 class="text-xl font-bold mb-4 neon-text">Registered Users</h2>
                     <div class="list-header" style="grid-template-columns: 1fr 2fr 1fr;">
-                        <div>UID</div>
-                        <div>Email</div>
+                        <div>UID (Partial)</div>
+                        <div>Email (Username / Status)</div>
                         <div>Actions</div>
                     </div>
                     <div id="userList">
                         <div class="loading-spinner"><i class="fas fa-spinner fa-spin neon-text"></i> Loading Users...</div>
                     </div>
-                    <p class="text-xs opacity-50 mt-4">Note: User deletion here only removes the profile; Firebase Auth deletion requires Admin SDK which is simulated.</p>
+                    <p class="text-xs opacity-50 mt-4">Note: User deletion here only removes the profile; Firebase Auth deletion requires Admin SDK which is simulated. Banning sets an `isBanned` flag on their profile.</p>
                 </div>
 
-                <!-- 3. Challenges Tab (Mock Interface) -->
+                <!-- 3. Challenges Tab (Live List & Creation) -->
                 <div id="challenges" class="tab-pane hidden">
-                     <h2 class="text-xl font-bold mb-4 neon-text">Challenge Management (Mock)</h2>
-                     <p class="mb-4 opacity-80">This section simulates adding or editing challenges. For a real system, challenge content and flags would be managed via a backend API or secure cloud functions.</p>
+                     <h2 class="text-xl font-bold mb-4 neon-text">Challenge Management</h2>
+                     <p class="mb-4 opacity-80">Define a new challenge below, or manage the release status and statistics of existing challenges.</p>
+                     
+                     <h3 class="text-lg font-bold mb-2 neon-text">Challenge Creator</h3>
+                     <div id="challengeMessage" class="mb-4 text-sm hidden p-2 rounded" style="border: 1px solid var(--neon-red); background: rgba(255, 43, 43, 0.1);"></div>
 
-                     <div class="bg-gray-800 p-4 rounded-lg">
-                         <p class="font-bold neon-text">New Challenge Creator</p>
-                         <input type="text" placeholder="Title" class="w-full mt-2 p-2 rounded bg-gray-700 border border-gray-600">
-                         <textarea placeholder="Description" class="w-full mt-2 p-2 rounded bg-gray-700 border border-gray-600"></textarea>
-                         <button class="action-btn mt-2 bg-blue-500 text-white">Save New Challenge (Simulated)</button>
-                     </div>
+                     <form id="challengeForm" class="bg-gray-800 p-4 rounded-lg mb-8">
+                         <input id="chalTitle" type="text" placeholder="Title (e.g., Web XSS Basic)" class="challenge-input" required>
+                         <div class="mt-3 grid grid-cols-2 gap-3">
+                             <input id="chalId" type="text" placeholder="Unique ID (e.g., web-xss-basic)" class="challenge-input" required>
+                             <input id="chalPoints" type="number" placeholder="Points (e.g., 150)" class="challenge-input" required>
+                         </div>
+                         <textarea id="chalDescription" placeholder="Challenge Description" class="challenge-input mt-3" rows="3" required></textarea>
+                         <input id="chalFlag" type="text" placeholder="Correct Flag (e.g., flag{secret})" class="challenge-input mt-3" required>
+                         <input id="chalCategory" type="text" placeholder="Tags (Comma Separated, e.g., web, crypto)" class="challenge-input mt-3" required>
+                         
+                         <!-- ADDED: File Input Field -->
+                         <label for="chalFile" class="text-sm opacity-75 mt-3 block">Optional: Challenge File (ZIP, PDF, etc.)</label>
+                         <input id="chalFile" type="file" class="challenge-input mt-1 border-gray-600 p-1">
+
+                         <button id="saveChallengeBtn" type="submit" class="action-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white w-full">Save New Challenge</button>
+                     </form>
+
+                     <h3 class="text-lg font-bold mb-2 neon-text">Existing Challenges</h3>
+                     <div class="challenge-list-header">
+                        <div>ID</div>
+                        <div>Category</div>
+                        <div>Points</div>
+                        <div>Solved</div>
+                        <div>Control</div>
+                    </div>
+                    <div id="challengeList">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin neon-text"></i> Loading Challenges...</div>
+                    </div>
                 </div>
                 
                 <!-- 4. Site Settings Tab (Mock Interface) -->
@@ -222,13 +272,17 @@
             orderBy,
             onSnapshot,
             deleteDoc,
-            writeBatch
+            setDoc,
+            serverTimestamp,
+            increment 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // NEW: Import Storage functions
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
 
         // --- ADMIN CONFIGURATION ---
-        // !!! IMPORTANT: In a production app, use Firebase Security Rules and Auth Claims (roles)
-        // This is a simple client-side check for demonstration purposes only.
-        const ADMIN_EMAIL = "havocadmin@gmail.com"; // <--- PASTE YOUR ADMIN EMAIL HERE
+        const ADMIN_EMAIL = "havocadmin@gmail.com"; 
         
         // --- FIREBASE CONFIGURATION (Synchronized) ---
         const firebaseConfig = {
@@ -245,20 +299,27 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Initialize Storage
 
         // --- GLOBAL STATE ---
         let currentUserId = null;
+        let challengeSolvedCounts = {}; // Stores {challengeId: count}
         
         // --- DOM Elements ---
         const authRequired = document.getElementById('authRequired');
         const adminContent = document.getElementById('adminContent');
         const teamList = document.getElementById('teamList');
         const userList = document.getElementById('userList');
+        const challengeForm = document.getElementById('challengeForm');
+        const challengeMessage = document.getElementById('challengeMessage');
+        const challengeList = document.getElementById('challengeList');
         
         // --- UTILITY FUNCTIONS ---
-        function showToast(type, message) {
-            console.log(`[TOAST ${type.toUpperCase()}]: ${message}`);
-            // Simplified toast for admin panel, relying primarily on console for feedback.
+        function showAdminMessage(type, message) {
+            const cls = type === 'success' ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20';
+            challengeMessage.className = `mb-4 text-sm p-2 rounded ${cls}`;
+            challengeMessage.innerHTML = `<span class="font-bold">${type.toUpperCase()}:</span> ${message}`;
+            challengeMessage.classList.remove('hidden');
         }
 
         // --- TAB LOGIC ---
@@ -293,13 +354,15 @@
                     });
                 });
                 renderTeamList(teams);
+                // Also trigger solved count calculation based on live team data
+                fetchChallengeSolvedCounts(teams);
             }, (error) => {
                 console.error("Error fetching teams:", error);
                 teamList.innerHTML = `<div class="p-4 text-center neon-text">Error fetching team data.</div>`;
             });
         }
 
-        /** Renders the team list table */
+        /** Renders the team list table (Unchanged) */
         function renderTeamList(teams) {
             teamList.innerHTML = '';
             
@@ -329,25 +392,27 @@
 
         /** 2. Live User List Listener */
         function listenForUsers() {
-             const userProfilesRef = collection(db, `/artifacts/${APP_ID}/users`);
+             const usersCollectionRef = collection(db, `/artifacts/${APP_ID}/users`);
              
-             // NOTE: Since user profiles are organized by UID, we listen to the parent collection
-             // This is less efficient than a query but fetches all profile documents.
-             onSnapshot(userProfilesRef, async (snapshot) => {
+             // We listen to changes in the USER's top-level folder documents (UID)
+             onSnapshot(usersCollectionRef, async (snapshot) => {
                  const users = [];
                  const batchPromises = [];
 
-                 snapshot.forEach(doc => {
-                     // We fetch the 'profile' subcollection document for the username/email
-                     const profileRef = doc.ref.path + '/user_profiles/profile';
-                     batchPromises.push(getDoc(doc.ref.firestore, profileRef).then(profileSnap => {
+                 // Iterate over the parent user documents (UID)
+                 snapshot.forEach(userDoc => {
+                     // Get the full profile path reference
+                     const profileDocRef = doc(db, userDoc.ref.path, 'user_profiles', 'profile');
+                     
+                     // CRITICAL FIX: Use the actual DocumentReference to fetch the profile data
+                     batchPromises.push(getDoc(profileDocRef).then(profileSnap => {
                          if (profileSnap.exists()) {
                             users.push({
-                                uid: doc.id,
+                                uid: userDoc.id,
                                 ...profileSnap.data()
                             });
                          }
-                     }));
+                     }).catch(e => console.error(`Error fetching profile for user ${userDoc.id}:`, e)));
                  });
 
                  // Wait for all profile fetches to complete
@@ -371,16 +436,100 @@
             users.forEach(user => {
                 const listItem = document.createElement('div');
                 listItem.className = 'list-item';
-                listItem.style.gridTemplateColumns = '1fr 2fr 1fr'; // Adjust column width for this list
+                // Adjusting the grid template columns to accommodate the action buttons
+                listItem.style.gridTemplateColumns = '1fr 2fr 1fr'; 
                 
+                const isBanned = user.isBanned === true;
+                const banButtonClass = isBanned ? 'bg-green-600 hover:bg-green-700' : 'btn-ban';
+                const banText = isBanned ? 'UNBAN' : 'BAN';
+                const statusText = isBanned ? 'BANNED' : 'ACTIVE';
+                const statusClass = isBanned ? 'text-red-500' : 'neon-green-text';
+
                 listItem.innerHTML = `
                     <div class="text-xs opacity-75">${user.uid.substring(0, 8)}...</div>
-                    <div>${user.email} <span class="neon-green-text text-xs">(${user.username})</span></div>
-                    <div class="flex justify-end">
+                    <div>${user.email} <span class="text-xs">(${user.username})</span> <span class="${statusClass} text-xs ml-2 font-bold">${statusText}</span></div>
+                    <div class="flex justify-end gap-2">
+                        <button class="action-btn ${banButtonClass}" data-action="toggle-ban" data-id="${user.uid}" data-banned="${isBanned}">${banText}</button>
                         <button class="action-btn btn-delete" data-action="delete-user" data-id="${user.uid}">DELETE</button>
                     </div>
                 `;
                 userList.appendChild(listItem);
+            });
+        }
+
+        /** 3. Challenge List Listener */
+        function listenForChallenges() {
+            const challengesRef = collection(db, `/artifacts/${APP_ID}/public/data/challenges`);
+            const q = query(challengesRef, orderBy("points", "desc"));
+            
+            onSnapshot(q, (snapshot) => {
+                const challenges = [];
+                snapshot.forEach(doc => {
+                    challenges.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                renderChallengeList(challenges);
+            }, (error) => {
+                console.error("Error fetching challenges:", error);
+                challengeList.innerHTML = `<div class="p-4 text-center neon-text">Error fetching challenge data.</div>`;
+            });
+        }
+
+        /** Fetches solved counts for challenges from the teams collection */
+        function fetchChallengeSolvedCounts(teams) {
+            const counts = {};
+            
+            teams.forEach(team => {
+                if (team.solvedChallenges) {
+                    for (const chalId in team.solvedChallenges) {
+                        if (team.solvedChallenges[chalId] === true) {
+                            counts[chalId] = (counts[chalId] || 0) + 1;
+                        }
+                    }
+                }
+            });
+
+            challengeSolvedCounts = counts;
+            listenForChallenges(); 
+        }
+
+
+        /** Renders the challenge list table */
+        function renderChallengeList(challenges) {
+            challengeList.innerHTML = '';
+            
+            if (challenges.length === 0) {
+                challengeList.innerHTML = `<div class="p-4 text-center">No challenges defined.</div>`;
+                return;
+            }
+
+            challenges.forEach(challenge => {
+                const solvedCount = challengeSolvedCounts[challenge.id] || 0;
+                const isReleased = challenge.isReleased === true;
+                const releaseButtonClass = isReleased ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600';
+                const releaseText = isReleased ? 'HIDE' : 'RELEASE';
+
+                const listItem = document.createElement('div');
+                listItem.className = 'challenge-list-item';
+                
+                listItem.innerHTML = `
+                    <div class="text-xs opacity-75">${challenge.id}</div>
+                    <div>${(challenge.category || 'misc').toUpperCase()}</div>
+                    <div>${challenge.points}</div>
+                    <div class="font-bold">${solvedCount}</div>
+                    <div class="flex gap-2">
+                        <button class="action-btn ${releaseButtonClass}" 
+                                data-action="toggle-release" 
+                                data-id="${challenge.id}" 
+                                data-released="${isReleased}">
+                            ${releaseText}
+                        </button>
+                        <button class="action-btn btn-delete" data-action="delete-challenge" data-id="${challenge.id}">DELETE</button>
+                    </div>
+                `;
+                challengeList.appendChild(listItem);
             });
         }
 
@@ -397,7 +546,6 @@
 
             if (action === 'delete-team') {
                 if (confirm(`Are you sure you want to permanently delete Team ${teamId}?`)) {
-                    // FIX: Ensure delete is done using admin privileges if deployed securely.
                     await deleteTeam(teamId);
                 }
             } else if (action === 'disqualify' || action === 'reactivate') {
@@ -410,6 +558,7 @@
             const target = e.target;
             const action = target.dataset.action;
             const userId = target.dataset.id;
+            const isBanned = target.dataset.banned === 'true'; 
             
             if (!action || !userId) return;
 
@@ -417,8 +566,89 @@
                 if (confirm(`Are you sure you want to delete User ${userId}? (This only deletes their profile data in Firestore)`)) {
                     await deleteUserProfile(userId);
                 }
+            } else if (action === 'toggle-ban') {
+                await toggleUserBanStatus(userId, !isBanned);
             }
         });
+        
+        // Listener for dynamic actions on Challenge List
+        challengeList.addEventListener('click', async (e) => {
+            const target = e.target;
+            const action = target.dataset.action;
+            const challengeId = target.dataset.id;
+            const isReleased = target.dataset.released === 'true'; // Convert string to boolean
+            
+            if (!action || !challengeId) return;
+
+            if (action === 'delete-challenge') {
+                if (confirm(`Are you sure you want to permanently delete Challenge ${challengeId}?`)) {
+                    await deleteChallenge(challengeId);
+                }
+            } else if (action === 'toggle-release') {
+                await toggleChallengeRelease(challengeId, !isReleased);
+            }
+        });
+        
+        // CHALLENGE CREATION HANDLER
+        challengeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('chalTitle').value.trim();
+            const id = document.getElementById('chalId').value.trim();
+            const points = parseInt(document.getElementById('chalPoints').value.trim(), 10);
+            const description = document.getElementById('chalDescription').value.trim();
+            const flag = document.getElementById('chalFlag').value.trim();
+            const category = document.getElementById('chalCategory').value.trim();
+            const fileInput = document.getElementById('chalFile');
+            const file = fileInput.files[0];
+            
+            if (!title || !id || isNaN(points) || !description || !flag || !category) {
+                showAdminMessage('error', 'All fields must be filled out correctly.');
+                return;
+            }
+            
+            let fileUrl = null;
+            let fileName = null;
+
+            try {
+                // 1. Handle File Upload (if present)
+                if (file) {
+                    showAdminMessage('success', `Uploading file ${file.name}...`);
+                    const storageRef = ref(storage, `challenges/${id}/${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    fileUrl = await getDownloadURL(storageRef);
+                    fileName = file.name;
+                }
+
+                 // Define the document reference using the ID as the document name
+                const challengeRef = doc(db, `/artifacts/${APP_ID}/public/data/challenges`, id);
+
+                const newChallengeData = {
+                    title: title,
+                    points: points,
+                    category: category.toLowerCase(),
+                    difficulty: 'medium', 
+                    description: description,
+                    flag: flag,
+                    tags: category.split(',').map(t => t.trim().toLowerCase()), 
+                    isReleased: false, 
+                    releaseTime: serverTimestamp(),
+                    // Save file details if file was uploaded
+                    files: fileUrl ? [{ name: fileName, url: fileUrl }] : []
+                };
+
+                // Use setDoc to create/overwrite the challenge document
+                await setDoc(challengeRef, newChallengeData);
+                
+                showAdminMessage('success', `Challenge "${title}" saved and file uploaded successfully!`);
+                challengeForm.reset();
+
+            } catch (error) {
+                console.error("Error saving challenge:", error);
+                showAdminMessage('error', `Failed to save challenge: ${error.message}`);
+            }
+        });
+
 
         // --- ADMIN DATABASE OPERATIONS ---
 
@@ -428,36 +658,69 @@
                 await updateDoc(teamRef, {
                     disqualified: disqualify || false
                 });
-                showToast('success', `Team ${teamId} ${disqualify ? 'disqualified' : 'reactivated'}.`);
+                showAdminMessage('success', `Team ${teamId} ${disqualify ? 'disqualified' : 'reactivated'}.`);
             } catch (e) {
                 console.error("Error toggling team status:", e);
-                showToast('error', 'Failed to update team status.');
+                showAdminMessage('error', 'Failed to update team status.');
             }
         }
         
         async function deleteTeam(teamId) {
             const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, teamId);
             try {
-                // In a real system, you'd also need to delete all related challenge submissions and user metadata.
                 await deleteDoc(teamRef); 
-                showToast('success', `Team ${teamId} deleted.`);
+                showAdminMessage('success', `Team ${teamId} deleted.`);
             } catch (e) {
                 console.error("Error deleting team:", e);
-                showToast('error', 'Failed to delete team.');
+                showAdminMessage('error', 'Failed to delete team.');
+            }
+        }
+
+        async function toggleUserBanStatus(userId, ban) {
+            const profileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
+            try {
+                await updateDoc(profileRef, {
+                    isBanned: ban
+                });
+                showAdminMessage('success', `User ${userId.substring(0,8)}... ${ban ? 'BANNED' : 'UNBANNED'}.`);
+            } catch (e) {
+                console.error("Error toggling user ban status:", e);
+                showAdminMessage('error', 'Failed to update user ban status. Check permissions.');
             }
         }
 
         async function deleteUserProfile(userId) {
-            // Delete the main profile document within the private user folder
             const profileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
             try {
-                // NOTE: To truly delete the user from Firebase Auth, a secure Cloud Function or Admin SDK is required. 
-                // This simulates deleting the associated public/private data.
                 await deleteDoc(profileRef);
-                showToast('success', `User profile ${userId} deleted.`);
+                showAdminMessage('success', `User profile ${userId} deleted.`);
             } catch (e) {
                 console.error("Error deleting user profile:", e);
-                showToast('error', 'Failed to delete user profile.');
+                showAdminMessage('error', 'Failed to delete user profile.');
+            }
+        }
+        
+        async function toggleChallengeRelease(challengeId, shouldRelease) {
+            const challengeRef = doc(db, `/artifacts/${APP_ID}/public/data/challenges`, challengeId);
+            try {
+                await updateDoc(challengeRef, {
+                    isReleased: shouldRelease
+                });
+                showAdminMessage('success', `Challenge ${challengeId} ${shouldRelease ? 'RELEASED' : 'HIDDEN'}.`);
+            } catch (e) {
+                console.error("Error toggling challenge release:", e);
+                showAdminMessage('error', 'Failed to update challenge status.');
+            }
+        }
+        
+        async function deleteChallenge(challengeId) {
+            const challengeRef = doc(db, `/artifacts/${APP_ID}/public/data/challenges`, challengeId);
+            try {
+                await deleteDoc(challengeRef); 
+                showAdminMessage('success', `Challenge ${challengeId} deleted.`);
+            } catch (e) {
+                console.error("Error deleting challenge:", e);
+                showAdminMessage('error', 'Failed to delete challenge.');
             }
         }
 
@@ -471,8 +734,8 @@
                 adminContent.style.display = 'block';
                 
                 // Start listeners for real-time data
-                listenForTeams();
-                listenForUsers();
+                listenForTeams(); 
+                listenForUsers(); 
             } else {
                 authRequired.style.display = 'block';
                 adminContent.style.display = 'none';
