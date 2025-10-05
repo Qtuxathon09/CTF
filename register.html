@@ -35,6 +35,8 @@
             position: fixed;
             top: 0;
             left: 0;
+            right: 0; /* Ensures full width */
+            bottom: 0;
             width: 100%;
             height: 100%;
             z-index: 1;
@@ -68,7 +70,8 @@
 
         .auth-form input[type="text"],
         .auth-form input[type="email"],
-        .auth-form input[type="password"] {
+        .auth-form input[type="password"],
+        .auth-form input[type="tel"] { /* Added tel input style */
             width: 100%;
             padding: 0.9rem 1rem;
             border-radius: 8px;
@@ -157,7 +160,6 @@
             color: var(--color-white);
             transition: all 0.3s ease;
         }
-        /* Define success and error styles here for the message box */
         .message-success {
             background-color: rgba(68, 255, 68, 0.1);
             border: 1px solid rgba(68, 255, 68, 0.3);
@@ -195,7 +197,11 @@
             <input type="text" id="username" name="username" required autocomplete="username">
             
             <label for="email">EMAIL:</label>
-            <input type="email" id="email" name="email" required autocomplete="email">
+            <!-- IMPORTANT: Set autocomplete to off to prevent the browser from filling the password field with a random password based on email -->
+            <input type="email" id="email" name="email" required autocomplete="off"> 
+
+            <label for="phone">PHONE NUMBER:</label>
+            <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="e.g., +919876543210">
 
             <label for="password">PASSWORD:</label>
             <input type="password" id="password" name="password" required autocomplete="new-password">
@@ -208,7 +214,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            sendEmailVerification // NEW IMPORT
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CUSTOM Firebase Configuration ---
@@ -244,6 +254,7 @@
             
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value; // NEW: Get phone number
             const password = document.getElementById('password').value;
             const submitButton = e.submitter;
 
@@ -257,16 +268,24 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // 2. Save user profile (username) to Firestore
+                // 2. Send Email Verification (Encourages using a real email)
+                await sendEmailVerification(user);
+                
+                // 3. Save user profile (username and phone) to Firestore
                 // Path: /artifacts/{appId}/users/{userId}/user_profiles/profile
                 const userProfileRef = doc(db, `/artifacts/${appId}/users/${user.uid}/user_profiles/profile`);
                 await setDoc(userProfileRef, {
-                    username: username,
-                    email: user.email,
+                    username: username.toLowerCase(), // Store in lowercase for consistency
+                    email: user.email.toLowerCase(), // Store email in lowercase
+                    phone: phone, // NEW: Save phone number
+                    isEmailVerified: user.emailVerified, // Will be false initially
                     createdAt: new Date().toISOString()
                 });
 
-                showMessage('success', `REGISTRATION SUCCESSFUL! Welcome <strong>${username.toUpperCase()}</strong>. You can now log in.`);
+                showMessage('success', `
+                    REGISTRATION SUCCESSFUL! Welcome <strong>${username.toUpperCase()}</strong>.<br>
+                    Please **CHECK YOUR EMAIL** to verify your account before logging in.
+                `);
                 
                 // Clear form after success
                 document.getElementById('registrationForm').reset();
@@ -344,19 +363,16 @@
         function drawLines() {
             for (let i = 0; i < numParticles; i++) {
                 for (let j = i + 1; j < numParticles; j++) {
-                    const p1 = particles[i];
-                    const p2 = particles[j];
-                    
-                    const dx = p1.x - p2.x;
-                    const dy = p1.y - p2.y;
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist < maxDist) {
                         const alpha = 1 - (dist / maxDist);
                         
                         ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
                         
                         ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.25})`; 
                         ctx.lineWidth = 1;
@@ -382,8 +398,6 @@
         }
 
         window.onload = function () {
-            // No need to call initializeAuth() on the registration page, 
-            // as it caused errors and is only needed for pre-authenticating users.
             animate();
         }
     </script>
