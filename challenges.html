@@ -1096,497 +1096,514 @@
     <!-- Consolidated JavaScript Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            updateDoc, 
-            arrayUnion, 
-            increment,
-            onSnapshot,
-            collection,
-            query,
-            where,
-            getDocs 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    updateDoc, 
+    arrayUnion, 
+    increment,
+    onSnapshot, // Used for live challenge list
+    collection,
+    query,
+    where,
+    getDocs,
+    orderBy // Used to order challenges by points
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIGURATION (Must be set for database interaction) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
-            authDomain: "havoc-985d0.firebaseapp.com",
-            databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
-            projectId: "havoc-985d0",
-            storageBucket: "havoc-985d0.firebasestorage.app",
-            messagingSenderId: "8269389875",
-            appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
-            measurementId: "G-Y6FXWB2RWY"
-        };
-        const APP_ID = firebaseConfig.projectId; 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+// --- FIREBASE CONFIGURATION (Must be set for database interaction) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyDIamHzhka0fwSE1WtAQVLCcbruT5b7UZk",
+    authDomain: "havoc-985d0.firebaseapp.com",
+    databaseURL: "https://havoc-985d0-default-rtdb.firebaseio.com",
+    projectId: "havoc-985d0",
+    storageBucket: "havoc-985d0.firebasestorage.app",
+    messagingSenderId: "8269389875",
+    appId: "1:8269389875:web:1fa7fb79185a3f31dc4346",
+    measurementId: "G-Y6FXWB2RWY"
+};
+const APP_ID = firebaseConfig.projectId; 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-        // --- GLOBAL STATE ---
-        let currentUserId = null;
-        let userTeamId = null;
-        let userTeamData = null;
-        let unsubscribeTeamListener = null;
-        let currentChallenge = null; 
+// --- GLOBAL STATE ---
+let currentUserId = null;
+let userTeamId = null;
+let userTeamData = null;
+let liveChallenges = []; // NEW: Array to store live, released challenges
+let currentChallenge = null; 
 
-        // --- MOCK CHALLENGE DATA (with correct points assigned) ---
-        const CHALLENGES = [
-            { id: 'crypto-vault-1', title: "Crypto Vault 1", points: 100, category: "crypto", difficulty: "easy", description: "Find the hidden key by reversing a simple substitution cipher.", flag: "flag{easy_cipher}", tags: ["beginner", "cipher"], hints: ["Look up Caesar cipher.", "The key is 3."], solved: false },
-            { id: 'web-xss-basic', title: "Web XSS Basic", points: 150, category: "web", difficulty: "easy", description: "A simple XSS injection point. Deliver a payload to steal the admin's cookie.", flag: "flag{xss_got_ya}", tags: ["injection", "frontend"], hints: ["Try basic script tags.", "Check for filtering on angle brackets."], solved: false },
-            { id: 'binary-overflow', title: "Binary Overflow", points: 300, category: "pwn", difficulty: "medium", description: "A classic buffer overflow challenge on a small C binary running on a remote server.", flag: "flag{b0f_r0ck5}", tags: ["c", "exploit", "stack"], hints: ["Look for `gets()`.", "The buffer size is 128 bytes."], solved: false },
-            { id: 'forensics-image-1', title: "Forensics Image 1", points: 200, category: "forensics", difficulty: "medium", description: "Analyze the provided disk image to find the deleted log file containing the flag.", flag: "flag{file_carving}", tags: ["disk", "steganography"], hints: ["Use `strings` or `foremost`.", "Check deleted files in the recycling bin mockup."], solved: false },
-            { id: 'reverse-eng-101', title: "Reverse Engineering 101", points: 100, category: "reverse", difficulty: "easy", description: "Decompile the provided Python bytecode file (.pyc) to find the hardcoded flag string inside the function.", flag: "flag{py_magic}", tags: ["python", "decompiling"], hints: ["Use `uncompyle6`.", "The function name is `check_flag`."], solved: false },
-            { id: 'hardest-hash', title: "Hardest Hash", points: 500, category: "crypto", difficulty: "hard", description: "Crack a custom iterated hash function implemented in a Go binary. This requires significant computation or finding the flaw.", flag: "flag{sha_too_slow}", tags: ["math", "custom_alg"], hints: ["The custom hash has a flaw in the initialization vector.", "Focus on timing attacks."], solved: false },
-            { 
-                id: 'pdf-metadata-hunt', 
-                title: "PDF Metadata Hunt", 
-                points: 50, 
-                category: "forensics", 
-                difficulty: "easy", 
-                description: "The flag is hidden in the metadata of the provided PDF document. Download the file and use a tool like ExifTool to find it!", 
-                flag: "flag{pdf_1s_n0t_s3cur3}", 
-                tags: ["metadata", "osint"], 
-                hints: ["The flag is in the Author field.", "The file is named 'ChallengeDoc.pdf'."], 
-                solved: false,
-                files: [
-                    { name: "ChallengeDoc.pdf", url: "https://placehold.co/600x400/000/fff/pdf?text=Download+Challenge+PDF" }
-                ]
-            }
-        ];
+// REMOVED: const CHALLENGES = [...] - This is now fetched live from Firebase
 
-        let currentFilters = {
-            category: 'all',
-            difficulty: 'all',
-            search: ''
-        };
+let currentFilters = {
+    category: 'all',
+    difficulty: 'all',
+    search: ''
+};
 
-        // --- UTILITY FUNCTIONS ---
-        const toastContainer = document.getElementById('toastContainer');
-        function showToast(type, message) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span class="font-bold">${type.toUpperCase()}:</span> ${message}`;
-            
-            toastContainer.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 500);
-            }, 5000);
-        }
-        
-        /** Closes the challenge modal. */
-        function closeModal() {
-            const challengeModal = document.getElementById('challengeModal');
-            const hintsContent = document.getElementById('hintsContent');
-            const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+// --- UTILITY FUNCTIONS ---
+const toastContainer = document.getElementById('toastContainer');
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span class="font-bold">${type.toUpperCase()}:</span> ${message}`;
+    
+    // Create new toast container logic in case it's missing (e.g., if re-rendered)
+    const container = document.getElementById('toastContainer') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'toastContainer', className: 'fixed bottom-5 right-5 z-[3000] space-y-2' }));
 
-            challengeModal.classList.remove('active');
-            currentChallenge = null;
-            document.getElementById('flagInput').value = '';
-            
-            // Reset hints
-            hintsContent.style.display = 'none';
-            hintsToggleBtn.innerHTML = '💡 Show Hints';
-        }
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
 
-        /** Toggles the visibility of challenge hints. */
-        function toggleHints() {
-            const hintsContent = document.getElementById('hintsContent');
-            const toggleBtn = document.getElementById('hintsToggleBtn');
-            const isHidden = hintsContent.style.display === 'none';
-            hintsContent.style.display = isHidden ? 'block' : 'none';
-            toggleBtn.innerHTML = isHidden ? '💡 Hide Hints' : '💡 Show Hints';
-        }
+/** Closes the challenge modal. */
+function closeModal() {
+    const challengeModal = document.getElementById('challengeModal');
+    const hintsContent = document.getElementById('hintsContent');
+    const hintsToggleBtn = document.getElementById('hintsToggleBtn');
 
-        /** Opens the challenge modal and populates content. */
-        function openModal(challengeId) {
-            const challengeModal = document.getElementById('challengeModal');
-            // This line ensures currentChallenge is set for use by submitFlag
-            currentChallenge = CHALLENGES.find(c => c.id === challengeId); 
-            if (!currentChallenge) {
-                showToast('error', 'Challenge data not found.');
-                return;
-            }
+    challengeModal.classList.remove('active');
+    currentChallenge = null;
+    document.getElementById('flagInput').value = '';
+    
+    // Reset hints
+    hintsContent.style.display = 'none';
+    hintsToggleBtn.innerHTML = '💡 Show Hints';
+}
 
-            document.getElementById('modalTitle').textContent = currentChallenge.title;
-            document.getElementById('modalDescription').textContent = currentChallenge.description;
-            
-            // Files/Download Link Rendering
-            const modalFiles = document.getElementById('modalFiles');
-            modalFiles.innerHTML = '';
-            if (currentChallenge.files && currentChallenge.files.length > 0) {
-                currentChallenge.files.forEach(file => {
-                    const fileLink = document.createElement('a');
-                    fileLink.href = file.url;
-                    fileLink.download = file.name;
-                    fileLink.className = "flex items-center gap-2 text-sm neon-text hover:underline mt-2";
-                    fileLink.innerHTML = `<i class="fas fa-download"></i> Download: ${file.name}`;
-                    modalFiles.appendChild(fileLink);
-                });
-            } else {
-                modalFiles.innerHTML = '<p class="text-sm opacity-75 mt-2">No files provided for this challenge.</p>';
-            }
-            
-            // Tags
-            const modalTags = document.getElementById('modalTags');
-            modalTags.innerHTML = '';
-            
-            const categoryTag = document.createElement('span');
-            categoryTag.className = `challenge-tag ${currentChallenge.category}`;
-            categoryTag.textContent = currentChallenge.category.toUpperCase();
-            modalTags.appendChild(categoryTag);
+/** Toggles the visibility of challenge hints. */
+function toggleHints() {
+    const hintsContent = document.getElementById('hintsContent');
+    const toggleBtn = document.getElementById('hintsToggleBtn');
+    const isHidden = hintsContent.style.display === 'none';
+    hintsContent.style.display = isHidden ? 'block' : 'none';
+    toggleBtn.innerHTML = isHidden ? '💡 Hide Hints' : '💡 Show Hints';
 
-            currentChallenge.tags.forEach(tag => {
-                const span = document.createElement('span');
-                span.className = 'challenge-tag';
-                span.textContent = tag.toUpperCase();
-                modalTags.appendChild(span);
-            });
+    // FIX: Populate hints content with the currently open challenge's hints
+    if (currentChallenge && currentChallenge.hints && hintsContent) {
+        hintsContent.innerHTML = currentChallenge.hints.map((hint, index) => 
+            `<p class="py-1 opacity-90">${index + 1}. ${hint}</p>`
+        ).join('');
+    } else {
+         hintsContent.innerHTML = '<p class="text-sm opacity-75">No hints available for this challenge.</p>';
+    }
+}
 
-            // Submission button state
-            const submitBtn = document.getElementById('submitFlagBtn');
-            const flagInput = document.getElementById('flagInput');
-            
-            if (currentChallenge.solved) {
-                flagInput.placeholder = "Already Solved!";
-                flagInput.disabled = true;
-                submitBtn.textContent = "SOLVED";
-                submitBtn.disabled = true;
-                submitBtn.classList.remove('neon-glow');
-            } else {
-                flagInput.placeholder = "flag{...}";
-                flagInput.disabled = false;
-                submitBtn.textContent = "Submit Flag";
-                submitBtn.disabled = false;
-                submitBtn.classList.add('neon-glow');
-            }
+/** Opens the challenge modal and populates content. */
+function openModal(challengeId) {
+    const challengeModal = document.getElementById('challengeModal');
+    // Find challenge in the live data array
+    currentChallenge = liveChallenges.find(c => c.id === challengeId); 
+    if (!currentChallenge) {
+        showToast('error', 'Error: Challenge data not found.');
+        return;
+    }
 
-            challengeModal.classList.add('active');
-        }
+    document.getElementById('modalTitle').textContent = currentChallenge.title;
+    document.getElementById('modalDescription').textContent = currentChallenge.description;
+    
+    // Files/Download Link Rendering
+    const modalFiles = document.getElementById('modalFiles');
+    modalFiles.innerHTML = '';
+    if (currentChallenge.files && currentChallenge.files.length > 0) {
+        currentChallenge.files.forEach(file => {
+            const fileLink = document.createElement('a');
+            fileLink.href = file.url;
+            fileLink.download = file.name;
+            fileLink.className = "flex items-center gap-2 text-sm neon-text hover:underline mt-2";
+            fileLink.innerHTML = `<i class="fas fa-download"></i> Download: ${file.name}`;
+            modalFiles.appendChild(fileLink);
+        });
+    } else {
+        modalFiles.innerHTML = '<p class="text-sm opacity-75 mt-2">No files provided for this challenge.</p>';
+    }
+    
+    // Tags
+    const modalTags = document.getElementById('modalTags');
+    modalTags.innerHTML = '';
+    
+    const categoryTag = document.createElement('span');
+    categoryTag.className = `challenge-tag ${currentChallenge.category}`;
+    categoryTag.textContent = currentChallenge.category.toUpperCase();
+    modalTags.appendChild(categoryTag);
 
-        /** Checks the solved status and re-renders the challenges based on the current team's data. */
-        function updateChallengeStatus(teamData) {
-            userTeamData = teamData;
-            
-            CHALLENGES.forEach(challenge => {
-                // Check if the teamData exists AND if the challenge ID is present in the solvedChallenges map
-                const isSolved = teamData && teamData.solvedChallenges && teamData.solvedChallenges[challenge.id];
-                challenge.solved = !!isSolved;
-            });
-            renderChallenges();
-        }
-
-        /** Fetches the current team data only ONCE when needed for submission/page load */
-        async function fetchTeamData(userId) {
-             try {
-                // 1. Try to find the team where the user is the leader (using UID as Doc ID)
-                let teamDocRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userId);
-                let docSnap = await getDoc(teamDocRef);
-                
-                if (docSnap.exists()) {
-                    userTeamId = docSnap.id;
-                    userTeamData = docSnap.data();
-                    return userTeamData;
-                }
-                
-                // 2. If not the leader/doc doesn't exist, search the members array (for regular members)
-                // This requires fetching the user's display name and email for the array-contains query.
-                const userProfileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
-                const profileSnap = await getDoc(userProfileRef);
-                
-                // Get user identity details (MUST match how they are stored in the teams 'members' array)
-                const userName = profileSnap.exists() ? profileSnap.data().username.toLowerCase() : auth.currentUser.email.split('@')[0].toLowerCase();
-                const userEmail = auth.currentUser.email.toLowerCase();
-
-                const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
-                // Use the complex object matching query for array-contains
-                const q = query(teamsRef, where("members", "array-contains", { uid: userId, name: userName, email: userEmail })); 
-                const teamsSnapshot = await getDocs(q);
-
-                if (!teamsSnapshot.empty) {
-                     teamDocRef = teamsSnapshot.docs[0];
-                     userTeamId = teamDocRef.id; // CRITICAL: Set userTeamId here for member teams
-                     userTeamData = teamDocRef.data();
-                     return userTeamData;
-                }
-                
-                userTeamId = null;
-                userTeamData = null;
-                return null;
-
-             } catch (error) {
-                console.error("Error fetching team status:", error);
-                return null;
-             }
-        }
+    if (currentChallenge.tags) { // Null check for tags array
+        currentChallenge.tags.forEach(tag => {
+            const span = document.createElement('span');
+            span.className = 'challenge-tag';
+            span.textContent = tag.toUpperCase();
+            modalTags.appendChild(span);
+        });
+    }
 
 
-        // --- FLAG SUBMISSION LOGIC (Real-time update) ---
-        async function submitFlag() {
-            if (!currentChallenge) {
-                 showToast('error', 'Error: Challenge data is missing.'); // FIX: Graceful error handling
-                 return;
-            }
-
-            const flagInput = document.getElementById('flagInput');
-            const submittedFlag = flagInput.value.trim();
-            const submitBtn = document.getElementById('submitFlagBtn');
-
-            if (!currentUserId) {
-                showToast('error', 'You must be logged in to submit a flag.');
-                return;
-            }
-            
-            if (!userTeamId) {
-                showToast('error', 'You must join a team before submitting flags.');
-                return;
-            }
-
-            if (!submittedFlag) {
-                showToast('error', 'Please enter a flag.');
-                return;
-            }
-            
-            if (currentChallenge.solved) {
-                showToast('error', 'This challenge has already been solved by your team.');
-                return;
-            }
-
-            submitBtn.textContent = 'Verifying...';
-            submitBtn.disabled = true;
-
-            // --- SIMULATE SERVER CHECK against mock flag ---
-            if (submittedFlag !== currentChallenge.flag) {
-                setTimeout(() => {
-                    showToast('error', 'Incorrect flag. Try again.');
-                    submitBtn.textContent = 'Submit Flag';
-                    submitBtn.disabled = false;
-                }, 1000);
-                return;
-            }
-
-            // --- CORRECT FLAG: Apply score and solved status to Firebase ---
-            try {
-                const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userTeamId);
-                const challengeId = currentChallenge.id;
-                const challengePoints = currentChallenge.points;
-                
-                // Use team data field update to record solution and update score atomically
-                await updateDoc(teamRef, {
-                    score: increment(challengePoints),
-                    // Use dynamic map key to save solved challenge (e.g., solvedChallenges.crypto-vault-1: true)
-                    [`solvedChallenges.${challengeId}`]: true 
-                });
-                
-                // Show success and update local state (which should be triggered by listener, but we force it)
-                currentChallenge.solved = true;
-                updateChallengeStatus({ ...userTeamData, score: (userTeamData?.score || 0) + challengePoints, solvedChallenges: { ...userTeamData?.solvedChallenges, [challengeId]: true } });
-                closeModal();
-                showToast('success', `FLAG ACCEPTED! +${challengePoints} points for your team!`);
-
-            } catch (error) {
-                console.error("Firebase update failed:", error);
-                showToast('error', 'Failed to update score. Check permissions.');
-            } finally {
-                 submitBtn.textContent = 'Submit Flag';
-                 submitBtn.disabled = false;
-            }
-        }
-
-        // --- Challenge Rendering ---
-        function createChallengeCard(challenge) {
-            const card = document.createElement('div');
-            // Check if solved based on the dynamic state
-            const solvedClass = challenge.solved ? 'opacity-50' : '';
-            card.className = `challenge-card glass hover-lift ${solvedClass}`;
-            card.setAttribute('data-id', challenge.id);
-            card.setAttribute('data-category', challenge.category);
-            card.setAttribute('data-difficulty', challenge.difficulty);
-            
-            // FIX: Use addEventListener instead of onclick assignment
-            card.addEventListener('click', () => openModal(challenge.id)); 
-            
-            const solvedIndicator = challenge.solved ? 
-                `<span class="challenge-points" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">SOLVED</span>` : 
-                `<span class="challenge-points">${challenge.points} pts</span>`;
-
-            const difficultyClass = challenge.difficulty;
-
-            card.innerHTML = `
-                <div class="challenge-header">
-                    <h3 class="challenge-title">${challenge.title}</h3>
-                    ${solvedIndicator}
-                </div>
-                <div class="challenge-tags">
-                    <span class="challenge-tag ${challenge.category}">${challenge.category.toUpperCase()}</span>
-                    ${challenge.tags.map(tag => `<span class="challenge-tag">${tag.toUpperCase()}</span>`).join('')}
-                </div>
-                <div class="challenge-description">
-                    ${challenge.description.substring(0, 80)}...
-                </div>
-                <div class="challenge-footer">
-                    <span class="challenge-difficulty ${difficultyClass}">${difficultyClass.toUpperCase()}</span>
-                    <button class="challenge-open-btn">View Challenge</button>
-                </div>
-            `;
-            return card;
-        }
-
-        function renderChallenges() {
-            const challengesGrid = document.getElementById('challengesGrid');
-            challengesGrid.innerHTML = '';
-            const filteredChallenges = CHALLENGES.filter(c => {
-                const categoryMatch = currentFilters.category === 'all' || c.category === currentFilters.category;
-                const difficultyMatch = currentFilters.difficulty === 'all' || c.difficulty === currentFilters.difficulty;
-                const searchMatch = !currentFilters.search || 
-                                     c.title.toLowerCase().includes(currentFilters.search) ||
-                                     c.description.toLowerCase().includes(currentFilters.search);
-                
-                return categoryMatch && difficultyMatch && searchMatch;
-            }).sort((a, b) => a.points - b.points); // Sort by points ascending
-
-            if (filteredChallenges.length === 0) {
-                challengesGrid.innerHTML = '<p class="text-center neon-text opacity-75 py-10 text-xl heading-condensed">No challenges match your filters.</p>';
-            } else {
-                filteredChallenges.forEach(c => challengesGrid.appendChild(createChallengeCard(c)));
-            }
-        }
+    // Submission button state
+    const submitBtn = document.getElementById('submitFlagBtn');
+    const flagInput = document.getElementById('flagInput');
+    
+    if (currentChallenge.solved) {
+        flagInput.placeholder = "Already Solved!";
+        flagInput.disabled = true;
+        submitBtn.textContent = "SOLVED";
+        submitBtn.disabled = true;
+        submitBtn.classList.remove('neon-glow');
+    } else {
+        flagInput.placeholder = "flag{...}";
+        flagInput.disabled = false;
+        submitBtn.textContent = "Submit Flag";
+        submitBtn.disabled = false;
+        submitBtn.classList.add('neon-glow');
+    }
+    
+    // Reset hints to hidden state
+    document.getElementById('hintsContent').style.display = 'none';
+    document.getElementById('hintsToggleBtn').innerHTML = '💡 Show Hints';
 
 
-        // --- Event Listeners and Initialization ---
+    challengeModal.classList.add('active');
+}
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get DOM elements for binding
-            const modalCloseBtn = document.getElementById('modalCloseBtn');
-            const hintsToggleBtn = document.getElementById('hintsToggleBtn');
-            const submitFlagBtn = document.getElementById('submitFlagBtn');
+/** Checks the solved status and re-renders the challenges based on the current team's data. */
+function updateChallengeStatus(teamData) {
+    userTeamData = teamData;
+    
+    liveChallenges.forEach(challenge => {
+        // Check if the teamData exists AND if the challenge ID is present in the solvedChallenges map
+        const isSolved = teamData && teamData.solvedChallenges && teamData.solvedChallenges[challenge.id];
+        challenge.solved = !!isSolved;
+    });
+    renderChallenges();
+}
 
-            // --- Modal/Form Event Binding (FIX for ReferenceError) ---
-            modalCloseBtn.addEventListener('click', closeModal);
-            hintsToggleBtn.addEventListener('click', toggleHints);
-            submitFlagBtn.addEventListener('click', submitFlag);
-
-            // Initial render
-            // NOTE: Initial render MUST happen before filters are bound, but data will be wrong.
-            renderChallenges(); 
-
-            // Filters and Search
-            document.querySelectorAll('.filter-tabs button').forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    document.querySelectorAll('.filter-tabs button').forEach(t => t.classList.remove('active'));
-                    e.target.classList.add('active');
-                    currentFilters.category = e.target.dataset.category;
-                    renderChallenges();
-                });
-            });
-
-            document.querySelectorAll('.difficulty-filters button').forEach(filter => {
-                filter.addEventListener('click', (e) => {
-                    document.querySelectorAll('.difficulty-filters button').forEach(f => f.classList.remove('active'));
-                    e.target.classList.add('active');
-                    currentFilters.difficulty = e.target.dataset.difficulty;
-                    renderChallenges();
-                });
-            });
-
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                currentFilters.search = e.target.value.toLowerCase().trim();
-                renderChallenges();
-            });
-
-            // Mobile Menu Toggle Logic
-            const navToggle = document.getElementById('navToggle');
-            const mobileMenu = document.getElementById('mobileMenu');
-
-            navToggle.addEventListener('click', () => {
-                mobileMenu.classList.toggle('active');
-            });
-            
-            // Close menu/modal on link click
-            document.querySelectorAll('.mobile-link, .nav-link').forEach(link => {
-                link.addEventListener('click', () => mobileMenu.classList.remove('active'));
-            });
-
-            // Modal Close by Overlay Click
-            const challengeModal = document.getElementById('challengeModal');
-            challengeModal.addEventListener('click', (e) => {
-                if (e.target === challengeModal) {
-                    closeModal();
-                }
-            });
-            
-            // --- AUTHENTICATION CHECK AND TEAM LISTENER ---
-            onAuthStateChanged(auth, async (user) => {
-                // Get the DOM element for showing the loading state
-                const challengeSection = document.querySelector('.challenges-section');
-                const loadingMessageHtml = `<div id="loadingOverlay" class="flex flex-col items-center justify-center p-20 text-xl text-white/50"><i class="fas fa-spinner fa-spin text-4xl mb-4 neon-text"></i> Authenticating team status...</div>`;
-                
-                // Get the hidden content template
-                const challengeStructureTemplate = document.getElementById('challengeStructureTemplate');
-
-                // FIX 1: Restore the original structure before manipulating the DOM elements inside it
-                challengeSection.innerHTML = challengeStructureTemplate.innerHTML;
-                
-                // If the user is logged out, show the final message and exit
-                if (!user) {
-                    challengeSection.innerHTML = `<div class="p-20 text-center neon-text">Please log in to view and submit challenges.</div>`;
-                    // Ensure global state is clear
-                    userTeamId = null;
-                    userTeamData = null;
-                    updateChallengeStatus(null); 
-                    return;
-                }
-                
-                // If logged in, proceed with loading
-                currentUserId = user.uid;
-                
-                // FIX 2: We must re-bind event listeners for filters/search after re-injecting the DOM
-                // This ensures filtering works correctly on the restored structure. (Simplified re-binding)
-                
-                // Fetch team data using the combined leader/member logic
-                const initialTeamData = await fetchTeamData(user.uid); 
-                
-                // Update the state and render the challenges based on the fetched data
-                updateChallengeStatus(initialTeamData);
-                
-                // --- Re-bind filter and search handlers manually after content injection ---
-                const searchInput = document.getElementById('searchInput');
-                const filterTabs = document.querySelectorAll('.filter-tabs button');
-                const difficultyFilters = document.querySelectorAll('.difficulty-filters button');
-                
-                if (searchInput) {
-                    searchInput.addEventListener('input', (e) => {
-                        currentFilters.search = e.target.value.toLowerCase().trim();
-                        renderChallenges();
-                    });
-                }
-
-                filterTabs.forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                         document.querySelectorAll('.filter-tabs button').forEach(t => t.classList.remove('active'));
-                         e.target.classList.add('active');
-                         currentFilters.category = e.target.dataset.category;
-                         renderChallenges();
-                    });
-                });
-
-                difficultyFilters.forEach(filter => {
-                    filter.addEventListener('click', (e) => {
-                        document.querySelectorAll('.difficulty-filters button').forEach(f => f.classList.remove('active'));
-                        e.target.classList.add('active');
-                        currentFilters.difficulty = e.target.dataset.difficulty;
-                        renderChallenges();
-                    });
-                });
-                // --- End manual re-binding ---
+/**
+ * NEW FUNCTION: Listens for live updates on challenges from Firestore.
+ * This is the source of truth for the list of available challenges.
+ */
+function listenForChallenges() {
+    const challengesRef = collection(db, `/artifacts/${APP_ID}/public/data/challenges`);
+    // Query for only challenges that have 'isReleased: true' and order by points
+    const q = query(challengesRef, where("isReleased", "==", true), orderBy("points", "asc")); 
+    
+    onSnapshot(q, (snapshot) => {
+        const fetchedChallenges = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            fetchedChallenges.push({
+                id: doc.id,
+                ...data,
+                // Ensure default structure for solved state
+                solved: false 
             });
         });
-    </script>
+        
+        liveChallenges = fetchedChallenges; // Update global list of challenges
+        // Re-check solved status with the new list (it will be null if team not found)
+        updateChallengeStatus(userTeamData); 
+        
+    }, (error) => {
+        console.error("Error fetching live challenges:", error);
+        showToast('error', 'Failed to load challenges from server.');
+    });
+}
+
+
+/** Fetches the current team data only ONCE when needed for submission/page load */
+async function fetchTeamData(userId) {
+     try {
+        // 1. Try to find the team where the user is the leader (using UID as Doc ID)
+        let teamDocRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userId);
+        let docSnap = await getDoc(teamDocRef);
+        
+        if (docSnap.exists()) {
+            userTeamId = docSnap.id;
+            userTeamData = docSnap.data();
+            return userTeamData;
+        }
+        
+        // 2. If not the leader/doc doesn't exist, search the members array (for regular members)
+        const userProfileRef = doc(db, `/artifacts/${APP_ID}/users/${userId}/user_profiles/profile`);
+        const profileSnap = await getDoc(userProfileRef);
+        
+        const userEmail = auth.currentUser.email.toLowerCase();
+        // Use default username if profile is missing
+        const userName = profileSnap.exists() ? profileSnap.data().username.toLowerCase() : userEmail.split('@')[0].toLowerCase(); 
+
+        const teamsRef = collection(db, `/artifacts/${APP_ID}/public/data/teams`);
+        // We assume the stored member object matches this structure exactly:
+        const q = query(teamsRef, where("members", "array-contains", { uid: userId, name: userName, email: userEmail })); 
+        const teamsSnapshot = await getDocs(q);
+
+        if (!teamsSnapshot.empty) {
+             const teamDoc = teamsSnapshot.docs[0];
+             userTeamId = teamDoc.id; // CRITICAL: Set userTeamId here for member teams
+             userTeamData = teamDoc.data();
+             return userTeamData;
+        }
+        
+        userTeamId = null;
+        userTeamData = null;
+        return null;
+
+     } catch (error) {
+         console.error("Error fetching team status:", error);
+         // If team fetch fails, still show challenges, but submissions will fail.
+         return null; 
+     }
+}
+
+
+// --- FLAG SUBMISSION LOGIC (Real-time update) ---
+async function submitFlag() {
+    if (!currentChallenge) {
+         showToast('error', 'Error: Challenge data is missing.'); 
+         return;
+    }
+
+    const flagInput = document.getElementById('flagInput');
+    const submittedFlag = flagInput.value.trim();
+    const submitBtn = document.getElementById('submitFlagBtn');
+
+    if (!currentUserId) {
+        showToast('error', 'You must be logged in to submit a flag.');
+        return;
+    }
+    
+    // Re-check for userTeamId just before submission, in case of race condition
+    if (!userTeamId) {
+        // We could call fetchTeamData again here, but for simplicity, force a check/error
+        const teamCheck = await fetchTeamData(currentUserId);
+        if (!teamCheck) {
+            showToast('error', 'You must join a team before submitting flags.');
+            return;
+        }
+    }
+
+    if (!submittedFlag) {
+        showToast('error', 'Please enter a flag.');
+        return;
+    }
+    
+    if (currentChallenge.solved) {
+        showToast('error', 'This challenge has already been solved by your team.');
+        return;
+    }
+
+    submitBtn.textContent = 'Verifying...';
+    submitBtn.disabled = true;
+
+    // --- SIMULATE SERVER CHECK against live challenge data (must re-fetch just in case the flag was edited in admin panel) ---
+    let actualFlag = currentChallenge.flag;
+    
+    if (submittedFlag !== actualFlag) {
+        setTimeout(() => {
+            showToast('error', 'Incorrect flag. Try again.');
+            submitBtn.textContent = 'Submit Flag';
+            submitBtn.disabled = false;
+        }, 1000);
+        return;
+    }
+
+    // --- CORRECT FLAG: Apply score and solved status to Firebase ---
+    try {
+        const teamRef = doc(db, `/artifacts/${APP_ID}/public/data/teams`, userTeamId);
+        const challengeId = currentChallenge.id;
+        const challengePoints = currentChallenge.points;
+        
+        // Use team data field update to record solution and update score atomically
+        await updateDoc(teamRef, {
+            score: increment(challengePoints),
+            // Use dynamic map key to save solved challenge (e.g., solvedChallenges.crypto-vault-1: true)
+            [`solvedChallenges.${challengeId}`]: true 
+        });
+        
+        // Success feedback
+        closeModal();
+        showToast('success', `FLAG ACCEPTED! +${challengePoints} points for your team!`);
+
+    } catch (error) {
+        console.error("Firebase update failed:", error);
+        showToast('error', 'Failed to update score. Check permissions.');
+    } finally {
+        // Final state reset will be handled by the onSnapshot listener if successful, 
+        // but we ensure the button is re-enabled if an error occurs.
+        submitBtn.textContent = 'Submit Flag';
+        submitBtn.disabled = false;
+    }
+}
+
+// --- Challenge Rendering ---
+function createChallengeCard(challenge) {
+    const card = document.createElement('div');
+    const solvedClass = challenge.solved ? 'opacity-50' : '';
+    card.className = `challenge-card glass hover-lift ${solvedClass}`;
+    card.setAttribute('data-id', challenge.id);
+    card.setAttribute('data-category', challenge.category);
+    card.setAttribute('data-difficulty', challenge.difficulty);
+    
+    card.addEventListener('click', () => openModal(challenge.id)); 
+    
+    const solvedIndicator = challenge.solved ? 
+        `<span class="challenge-points" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">SOLVED</span>` : 
+        `<span class="challenge-points">${challenge.points} pts</span>`;
+
+    const difficultyClass = challenge.difficulty || 'medium'; // Default to medium
+    const tagsHtml = (challenge.tags || []).map(tag => 
+        `<span class="challenge-tag">${tag.toUpperCase()}</span>`
+    ).join('');
+
+    card.innerHTML = `
+        <div class="challenge-header">
+            <h3 class="challenge-title">${challenge.title}</h3>
+            ${solvedIndicator}
+        </div>
+        <div class="challenge-tags">
+            <span class="challenge-tag ${challenge.category || 'misc'}">${(challenge.category || 'MISC').toUpperCase()}</span>
+            ${tagsHtml}
+        </div>
+        <div class="challenge-description">
+            ${(challenge.description || 'No description provided.').substring(0, 80)}...
+        </div>
+        <div class="challenge-footer">
+            <span class="challenge-difficulty ${difficultyClass}">${difficultyClass.toUpperCase()}</span>
+            <button class="challenge-open-btn">View Challenge</button>
+        </div>
+    `;
+    return card;
+}
+
+function renderChallenges() {
+    const challengesGrid = document.getElementById('challengesGrid');
+    challengesGrid.innerHTML = '';
+    
+    // Use liveChallenges array instead of the old mock array
+    const filteredChallenges = liveChallenges.filter(c => {
+        const categoryMatch = currentFilters.category === 'all' || c.category === currentFilters.category;
+        const difficultyMatch = currentFilters.difficulty === 'all' || (c.difficulty || 'medium') === currentFilters.difficulty;
+        const searchString = currentFilters.search.toLowerCase();
+        
+        const searchMatch = !searchString || 
+                                c.title.toLowerCase().includes(searchString) ||
+                                (c.description || '').toLowerCase().includes(searchString);
+        
+        return categoryMatch && difficultyMatch && searchMatch;
+    }).sort((a, b) => a.points - b.points); // Sort by points ascending
+
+    if (filteredChallenges.length === 0) {
+        challengesGrid.innerHTML = '<p class="text-center neon-text opacity-75 py-10 text-xl heading-condensed">No challenges match your filters or are currently released.</p>';
+    } else {
+        filteredChallenges.forEach(c => challengesGrid.appendChild(createChallengeCard(c)));
+    }
+}
+
+
+// --- Event Listeners and Initialization ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Get DOM elements for binding
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+    const submitFlagBtn = document.getElementById('submitFlagBtn');
+
+    // --- Modal/Form Event Binding ---
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+    if (hintsToggleBtn) hintsToggleBtn.addEventListener('click', toggleHints);
+    if (submitFlagBtn) submitFlagBtn.addEventListener('click', submitFlag);
+
+    // Initial render (will show loading or no challenges until data loads)
+    renderChallenges(); 
+
+    // Filters and Search
+    document.querySelectorAll('.filter-tabs button').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-tabs button').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            currentFilters.category = e.target.dataset.category;
+            renderChallenges();
+        });
+    });
+
+    document.querySelectorAll('.difficulty-filters button').forEach(filter => {
+        filter.addEventListener('click', (e) => {
+            document.querySelectorAll('.difficulty-filters button').forEach(f => f.classList.remove('active'));
+            e.target.classList.add('active');
+            currentFilters.difficulty = e.target.dataset.difficulty;
+            renderChallenges();
+        });
+    });
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentFilters.search = e.target.value.toLowerCase().trim();
+            renderChallenges();
+        });
+    }
+
+    // Mobile Menu Toggle Logic
+    const navToggle = document.getElementById('navToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (navToggle) {
+         navToggle.addEventListener('click', () => {
+             mobileMenu.classList.toggle('active');
+         });
+    }
+
+    // Close menu/modal on link click
+    document.querySelectorAll('.mobile-link, .nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (mobileMenu) mobileMenu.classList.remove('active');
+        });
+    });
+
+    // Modal Close by Overlay Click
+    const challengeModal = document.getElementById('challengeModal');
+    if (challengeModal) {
+        challengeModal.addEventListener('click', (e) => {
+            if (e.target === challengeModal) {
+                closeModal();
+            }
+        });
+    }
+    
+    // --- AUTHENTICATION CHECK AND TEAM/CHALLENGE LISTENERS ---
+    onAuthStateChanged(auth, async (user) => {
+        const challengeSection = document.querySelector('.challenges-section');
+        const challengeStructureTemplate = document.getElementById('challengeStructureTemplate');
+        
+        // Restore the structure (in case a previous check rendered the logged-out message)
+        if (challengeStructureTemplate && challengeSection) {
+            challengeSection.innerHTML = challengeStructureTemplate.innerHTML;
+        }
+
+        if (!user) {
+            if (challengeSection) {
+                challengeSection.innerHTML = `<div class="p-20 text-center neon-text">Please log in to view and submit challenges.</div>`;
+            }
+            userTeamId = null;
+            userTeamData = null;
+            liveChallenges = [];
+            renderChallenges(); // Render empty list/logged out message
+            return;
+        }
+        
+        currentUserId = user.uid;
+        
+        // 1. Fetch team data (once at login)
+        const initialTeamData = await fetchTeamData(user.uid); 
+        
+        // 2. Start the challenge listener. This listener will constantly update liveChallenges
+        // and call updateChallengeStatus (which calls renderChallenges).
+        listenForChallenges();
+        
+        // Note: The filter/search re-binding logic is now outside the onAuthStateChanged 
+        // to simplify the code, as the DOM structure is restored at the start of onAuthStateChanged.
+    });
+});
+</script>
 </body>
 </html>
